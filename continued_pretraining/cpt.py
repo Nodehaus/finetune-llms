@@ -9,7 +9,7 @@ def main():
     # Configuration
     max_seq_length = 2048
     dtype = None  # None for auto detection
-    load_in_4bit = True
+    load_in_4bit = False
     
     print("Loading Mistral 7B model...")
     # Load pretrained model and tokenizer
