@@ -1,16 +1,18 @@
-from unsloth import FastLanguageModel
-from datasets import load_dataset
-from unsloth import UnslothTrainer, UnslothTrainingArguments
+import argparse
 
 import torch
+from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 
-def main():
+from custom_dataset import load_custom_dataset
+
+
+def main(data_path: str = "data", json_key: str = "content", max_length: int = 2048):
     """Main training function."""
     # Configuration
-    max_seq_length = 2048
+    max_seq_length = max_length
     dtype = None  # None for auto detection
     load_in_4bit = False
-    
+
     print("Loading Mistral 7B model...")
     # Load pretrained model and tokenizer
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -20,111 +22,147 @@ def main():
         load_in_4bit=load_in_4bit,
         # token="hf_...", # use one if using gated models like meta-llama/Llama-2-7b-hf
     )
-    
+
     print("Setting up LoRA adapters...")
     # Add LoRA adapters
     model = FastLanguageModel.get_peft_model(
         model,
         r=128,  # Choose any number > 0! Suggested 8, 16, 32, 64, 128
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj",
-                        "embed_tokens", "lm_head"],
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+            "embed_tokens",
+            "lm_head",
+        ],
         lora_alpha=32,
         lora_dropout=0,  # Supports any, but = 0 is optimized
-        bias="none",     # Supports any, but = "none" is optimized
+        bias="none",  # Supports any, but = "none" is optimized
         use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
         random_state=3407,
-        use_rslora=True,   # Rank stabilized LoRA
-        loftq_config=None, # LoftQ
+        use_rslora=True,  # Rank stabilized LoRA
+        loftq_config=None,  # LoftQ
     )
-    
-    print("Loading and preparing dataset...")
-    # Load dataset
-    dataset = load_dataset("roneneldan/TinyStories", split="train[:2500]")
-    
+
+    print("Loading and preparing custom dataset...")
+    # Load custom dataset with train/validation split
+    datasets = load_custom_dataset(
+        data_path=data_path, json_key=json_key, max_length=max_length
+    )
+
+    train_dataset = datasets["train"]
+    val_dataset = datasets["validation"]
+    print(f"Train dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(val_dataset)}")
+
     def formatting_prompts_func(examples):
         texts = []
-        for story in examples["text"]:
+        for text in examples["text"]:
             # Add EOS token to prevent infinite generation
-            text = story + tokenizer.eos_token
-            texts.append(text)
+            formatted_text = text + tokenizer.eos_token
+            texts.append(formatted_text)
         return {"text": texts}
-    
-    # Apply formatting
-    dataset = dataset.map(formatting_prompts_func, batched=True)
-    
+
+    # Apply formatting to both datasets
+    train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
+    val_dataset = val_dataset.map(formatting_prompts_func, batched=True)
+
     print("Starting training...")
     # Training configuration
     trainer = UnslothTrainer(
         model=model,
         tokenizer=tokenizer,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
         dataset_text_field="text",
         max_seq_length=max_seq_length,
         dataset_num_proc=2,
-        
         args=UnslothTrainingArguments(
             per_device_train_batch_size=2,
             gradient_accumulation_steps=8,
-            
             # Use warmup_ratio instead of warmup_steps
             warmup_ratio=0.1,
             num_train_epochs=1,
-            
             # Select a learning rate
             learning_rate=5e-5,
-            
             # Select an optimizer
             optim="adamw_8bit",
-            
             # Select a weight decay
             weight_decay=0.01,
-            
             # Select a learning rate scheduler
             lr_scheduler_type="linear",
-            
             # Enable automatic mixed precision
             fp16=not torch.cuda.is_bf16_supported(),
             bf16=torch.cuda.is_bf16_supported(),
-            
             # Miscellaneous settings
             seed=3407,
             output_dir="outputs",
             save_strategy="no",
+            # Evaluation settings
+            evaluation_strategy="steps",
+            eval_steps=50,
+            logging_steps=10,
         ),
     )
-    
+
     # Start training
     trainer_stats = trainer.train()
-    
+
     print("Training completed!")
     print(f"Training time: {trainer_stats.metrics['train_runtime']:.2f} seconds")
-    print(f"Samples per second: {trainer_stats.metrics['train_samples_per_second']:.2f}")
-    
+    print(
+        f"Samples per second: {trainer_stats.metrics['train_samples_per_second']:.2f}"
+    )
+
     print("\nTesting inference...")
     # Test inference
     FastLanguageModel.for_inference(model)  # Enable native 2x faster inference
-    
+
     inputs = tokenizer(
-        [
-            "Once upon a time, in a galaxy, far far away,"
-        ], return_tensors="pt").to("cuda")
-    
+        ["Once upon a time, in a galaxy, far far away,"], return_tensors="pt"
+    ).to("cuda")
+
     with torch.no_grad():
         outputs = model.generate(**inputs, max_new_tokens=100, use_cache=True)
         generated_text = tokenizer.batch_decode(outputs)[0]
         print("\nGenerated story:")
         print(generated_text)
-    
+
     print("\nSaving model...")
     # Save model in native format
     model.save_pretrained("mistral_7b_finetuned")
     tokenizer.save_pretrained("mistral_7b_finetuned")
-    
+
     # Save model in GGUF format for efficient inference
-    model.save_pretrained_gguf("mistral_7b_finetuned", tokenizer, quantization_method="q4_k_m")
-    
+    # model.save_pretrained_gguf("mistral_7b_finetuned", tokenizer, quantization_method="q4_k_m")
+
     print("Model saved successfully!")
 
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Fine-tune Mistral 7B with custom dataset"
+    )
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        default="data",
+        help="Path to directory containing JSON files",
+    )
+    parser.add_argument(
+        "--json_key",
+        type=str,
+        default="content",
+        help="Key in JSON files containing text content",
+    )
+    parser.add_argument(
+        "--max_length", type=int, default=2048, help="Maximum length of text chunks"
+    )
+
+    args = parser.parse_args()
+
+    main(data_path=args.data_path, json_key=args.json_key, max_length=args.max_length)
