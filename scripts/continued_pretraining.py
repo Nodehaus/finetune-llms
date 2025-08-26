@@ -3,7 +3,7 @@ import argparse
 import torch
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 
-from custom_dataset import load_custom_dataset
+from src.custom_dataset import load_custom_dataset
 
 
 def main(data_path: str = "data", json_key: str = "content", max_length: int = 2048):
