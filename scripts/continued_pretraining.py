@@ -56,6 +56,11 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
 
     train_dataset = datasets["train"]
     val_dataset = datasets["validation"]
+
+    # Limit dataset sizes for testing
+    # train_dataset = train_dataset.select(range(min(2500, len(train_dataset))))
+    # val_dataset = val_dataset.select(range(min(250, len(val_dataset))))
+
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(val_dataset)}")
 
@@ -103,9 +108,9 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
             output_dir="outputs",
             save_strategy="no",
             # Evaluation settings
-            evaluation_strategy="steps",
-            eval_steps=50,
-            logging_steps=10,
+            # evaluation_strategy="steps",
+            # eval_steps=50,
+            # logging_steps=10,
         ),
     )
 
@@ -123,7 +128,10 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
     FastLanguageModel.for_inference(model)  # Enable native 2x faster inference
 
     inputs = tokenizer(
-        ["Once upon a time, in a galaxy, far far away,"], return_tensors="pt"
+        [
+            'A mark is generic if it is the common name for the product. A mark is descriptive if it describes a purpose, nature, or attribute of the product. A mark is suggestive if it suggests or implies a quality or characteristic of the product. A mark is arbitrary if it is a real English word that has no relation to the product. A mark is fanciful if it is an invented word.\n\nQ: The mark "Ivory" for a product made of elephant tusks. What is the type of mark?\nA: generic\n\nQ: The mark "Tasty" for bread. What is the type of mark?\nA: descriptive\n\nQ: The mark "Caress" for body soap. What is the type of mark?\nA: suggestive\n\nQ: The mark "Virgin" for wireless communications. What is the type of mark?\nA: arbitrary\n\nQ: The mark "Aswelly" for a taxi service. What is the type of mark?\nA: fanciful\n\nQ: The mark "Mask" for cloth that you wear on your face to filter air. What is the type of mark?\nA:'
+        ],
+        return_tensors="pt",
     ).to("cuda")
 
     with torch.no_grad():
