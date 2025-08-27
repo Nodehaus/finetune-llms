@@ -140,14 +140,16 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
         print("\nGenerated story:")
         print(generated_text)
 
+    print("\nSaving model to disk...")
+    model.save_pretrained("finetune-cpt-test")
+    tokenizer.save_pretrained("finetune-cpt-test")
+
     print("\nSaving model to HuggingFace Hub...")
     # Push to HuggingFace Hub
     model_name = "pbouda/finetune-cpt-test"
 
     model.push_to_hub(model_name, token=True)
     tokenizer.push_to_hub(model_name, token=True)
-
-    print(f"Model successfully pushed to HuggingFace Hub: {model_name}")
 
 
 if __name__ == "__main__":
