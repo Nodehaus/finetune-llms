@@ -3,7 +3,7 @@ import argparse
 import torch
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 
-from src.custom_dataset import load_custom_dataset
+from custom_dataset import load_custom_dataset
 
 
 def main(data_path: str = "data", json_key: str = "content", max_length: int = 2048):
@@ -140,15 +140,14 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
         print("\nGenerated story:")
         print(generated_text)
 
-    print("\nSaving model...")
-    # Save model in native format
-    model.save_pretrained("mistral_7b_finetuned")
-    tokenizer.save_pretrained("mistral_7b_finetuned")
-
-    # Save model in GGUF format for efficient inference
-    # model.save_pretrained_gguf("mistral_7b_finetuned", tokenizer, quantization_method="q4_k_m")
-
-    print("Model saved successfully!")
+    print("\nSaving model to HuggingFace Hub...")
+    # Push to HuggingFace Hub
+    model_name = "pbouda/finetune-cpt-test"
+    
+    model.push_to_hub(model_name, token=True)
+    tokenizer.push_to_hub(model_name, token=True)
+    
+    print(f"Model successfully pushed to HuggingFace Hub: {model_name}")
 
 
 if __name__ == "__main__":

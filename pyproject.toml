@@ -15,5 +15,8 @@ dev = [
     "ruff>=0.12.10",
 ]
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.ruff.lint]
 select = ["E", "F", "I"]
