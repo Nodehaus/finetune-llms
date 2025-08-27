@@ -15,9 +15,7 @@ if __name__ == "__main__":
 
     # Test prompts
     test_prompts = [
-        "Once upon a time, in a galaxy far, far away,",
-        "The future of artificial intelligence is",
-        "In a world where technology has advanced beyond imagination,",
+        'A mark is generic if it is the common name for the product. A mark is descriptive if it describes a purpose, nature, or attribute of the product. A mark is suggestive if it suggests or implies a quality or characteristic of the product. A mark is arbitrary if it is a real English word that has no relation to the product. A mark is fanciful if it is an invented word.\n\nQ: The mark "Ivory" for a product made of elephant tusks. What is the type of mark?\nA: generic\n\nQ: The mark "Tasty" for bread. What is the type of mark?\nA: descriptive\n\nQ: The mark "Caress" for body soap. What is the type of mark?\nA: suggestive\n\nQ: The mark "Virgin" for wireless communications. What is the type of mark?\nA: arbitrary\n\nQ: The mark "Aswelly" for a taxi service. What is the type of mark?\nA: fanciful\n\nQ: The mark "Mask" for cloth that you wear on your face to filter air. What is the type of mark?\nA:'
     ]
 
     print("\n" + "=" * 50)
