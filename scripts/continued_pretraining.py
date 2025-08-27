@@ -3,7 +3,7 @@ import argparse
 import torch
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 
-from custom_dataset import load_custom_dataset
+from finetune_llms.custom_dataset import load_custom_dataset
 
 
 def main(data_path: str = "data", json_key: str = "content", max_length: int = 2048):
@@ -143,10 +143,10 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
     print("\nSaving model to HuggingFace Hub...")
     # Push to HuggingFace Hub
     model_name = "pbouda/finetune-cpt-test"
-    
+
     model.push_to_hub(model_name, token=True)
     tokenizer.push_to_hub(model_name, token=True)
-    
+
     print(f"Model successfully pushed to HuggingFace Hub: {model_name}")
 
 

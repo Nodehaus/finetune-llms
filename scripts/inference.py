@@ -1,4 +1,4 @@
-from utils import (
+from finetune_llms.utils import (
     generate_text,
     load_peft_model_from_huggingface,
     setup_model_for_inference,
