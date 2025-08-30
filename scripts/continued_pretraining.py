@@ -143,13 +143,23 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
     print("\nSaving model to disk...")
     model.save_pretrained("finetune-cpt-test")
     tokenizer.save_pretrained("finetune-cpt-test")
+    model.save_pretrained_gguf(
+        "finetune-cpt-test-gguf",
+        tokenizer,
+        quantization_type="Q8_0",
+    )
 
     print("\nSaving model to HuggingFace Hub...")
-    # Push to HuggingFace Hub
     model_name = "pbouda/finetune-cpt-test"
-
     model.push_to_hub(model_name, token=True)
     tokenizer.push_to_hub(model_name, token=True)
+
+    gguf_model_name = "pbouda/finetune-cpt-test-gguf"
+    model.push_to_hub_gguf(
+        gguf_model_name,
+        tokenizer,
+        quantization_type="Q8_0",
+    )
 
 
 if __name__ == "__main__":
