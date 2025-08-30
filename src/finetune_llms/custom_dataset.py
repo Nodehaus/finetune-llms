@@ -172,6 +172,6 @@ def load_custom_dataset(
     )
 
     # Create 0.1 validation split
-    split = dataset.train_test_split(test_size=0.1, seed=42, shuffle=True)
+    split = dataset.train_test_split(test_size=0.05, seed=42, shuffle=True)
 
     return datasets.DatasetDict({"train": split["train"], "validation": split["test"]})
