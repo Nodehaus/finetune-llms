@@ -94,23 +94,23 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
             num_train_epochs=1,
             # Select a learning rate
             learning_rate=5e-5,
+            embedding_learning_rate=5e-6,
+            logging_steps=10,
             # Select an optimizer
             optim="adamw_8bit",
             # Select a weight decay
-            weight_decay=0.01,
+            weight_decay=0.00,
             # Select a learning rate scheduler
-            lr_scheduler_type="linear",
-            # Enable automatic mixed precision
-            fp16=not torch.cuda.is_bf16_supported(),
-            bf16=torch.cuda.is_bf16_supported(),
+            lr_scheduler_type="cosine",
             # Miscellaneous settings
             seed=3407,
             output_dir="outputs",
-            save_strategy="no",
+            report_to="wandb",
+            save_strategy="steps",
+            save_steps=500,
             # Evaluation settings
-            # evaluation_strategy="steps",
-            # eval_steps=50,
-            # logging_steps=10,
+            evaluation_strategy="steps",
+            eval_steps=100,
         ),
     )
 

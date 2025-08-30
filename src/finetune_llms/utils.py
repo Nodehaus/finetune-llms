@@ -13,7 +13,7 @@ def load_peft_model_from_huggingface(
     model_name: str,
     max_seq_length: int = 2048,
     dtype: Optional[torch.dtype] = None,
-    load_in_4bit: bool = True,
+    load_in_4bit: bool = False,
     token: Optional[str] = None,
 ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
     """
