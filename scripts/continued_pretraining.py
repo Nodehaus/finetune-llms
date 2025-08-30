@@ -110,7 +110,7 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
             save_steps=500,
             # Evaluation settings
             eval_strategy="steps",
-            eval_steps=100,
+            eval_steps=500,
         ),
     )
 
