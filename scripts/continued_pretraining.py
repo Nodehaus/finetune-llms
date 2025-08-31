@@ -1,9 +1,35 @@
 import argparse
 
 import torch
+from transformers import TrainerCallback
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 
 from finetune_llms.custom_dataset import load_custom_dataset
+from finetune_llms.custom_evaluator import evaluate_model
+
+
+class CustomEvalCallback(TrainerCallback):
+    """Custom callback for running trademark evaluation during training."""
+
+    def __init__(self, model, tokenizer, eval_steps=500):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.eval_steps = eval_steps
+
+    def on_step_end(self, args, state, control, **kwargs):
+        """Run custom evaluation at specified intervals."""
+        if state.global_step > 0 and state.global_step % self.eval_steps == 0:
+            print(f"\nRunning custom evaluation at step {state.global_step}...")
+            # Switch to inference mode temporarily
+            was_training = self.model.training
+            FastLanguageModel.for_inference(self.model)
+
+            # Run evaluation
+            evaluate_model(self.model, self.tokenizer, log_to_wandb=True)
+
+            # Switch back to training mode if needed
+            if was_training:
+                self.model.train()
 
 
 def main(data_path: str = "data", json_key: str = "content", max_length: int = 2048):
@@ -55,14 +81,11 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
     )
 
     train_dataset = datasets["train"]
-    val_dataset = datasets["validation"]
 
     # Limit dataset sizes for testing
     # train_dataset = train_dataset.select(range(min(2500, len(train_dataset))))
-    # val_dataset = val_dataset.select(range(min(250, len(val_dataset))))
 
     print(f"Train dataset size: {len(train_dataset)}")
-    print(f"Validation dataset size: {len(val_dataset)}")
 
     def formatting_prompts_func(examples):
         texts = []
@@ -72,20 +95,20 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
             texts.append(formatted_text)
         return {"text": texts}
 
-    # Apply formatting to both datasets
+    # Apply formatting to dataset
     train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
-    val_dataset = val_dataset.map(formatting_prompts_func, batched=True)
+    # Create custom evaluation callback
+    custom_eval_callback = CustomEvalCallback(model, tokenizer, eval_steps=50)
 
     print("Starting training...")
-    # Training configuration
     trainer = UnslothTrainer(
         model=model,
         tokenizer=tokenizer,
         train_dataset=train_dataset,
-        eval_dataset=val_dataset,
         dataset_text_field="text",
         max_seq_length=max_seq_length,
         dataset_num_proc=2,
+        callbacks=[custom_eval_callback],
         args=UnslothTrainingArguments(
             per_device_train_batch_size=2,
             gradient_accumulation_steps=8,
@@ -108,13 +131,9 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
             report_to="wandb",
             save_strategy="steps",
             save_steps=500,
-            # Evaluation settings
-            eval_strategy="steps",
-            eval_steps=500,
         ),
     )
 
-    # Start training
     trainer_stats = trainer.train()
 
     print("Training completed!")
@@ -123,8 +142,11 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
         f"Samples per second: {trainer_stats.metrics['train_samples_per_second']:.2f}"
     )
 
+    print("\nRunning final evaluation...")
+    FastLanguageModel.for_inference(model)
+    evaluate_model(model, tokenizer, log_to_wandb=True)
+
     print("\nTesting inference...")
-    # Test inference
     FastLanguageModel.for_inference(model)  # Enable native 2x faster inference
 
     inputs = tokenizer(
