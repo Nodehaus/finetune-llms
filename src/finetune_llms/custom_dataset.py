@@ -180,17 +180,11 @@ def load_custom_dataset(
 def load_evaluation_data():
     """Load evaluation data from the JSON file."""
     current_dir = Path(__file__).parent
-    json_path = current_dir / "data" / "legalbench-abercrombie-100samples.json"
-    
+    json_path = current_dir / "eval_data" / "legalbench-abercrombie-100samples.json"
+
     with open(json_path, "r") as f:
         data = json.load(f)
-    
+
     return [
-        {
-            "prompt": item["prompt"],
-            "answer": item["correct_answer"]
-        }
-        for item in data
+        {"prompt": item["prompt"], "answer": item["correct_answer"]} for item in data
     ]
-
-
