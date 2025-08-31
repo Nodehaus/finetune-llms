@@ -175,3 +175,22 @@ def load_custom_dataset(
     split = dataset.train_test_split(test_size=0.05, seed=42, shuffle=True)
 
     return datasets.DatasetDict({"train": split["train"], "validation": split["test"]})
+
+
+def load_evaluation_data():
+    """Load evaluation data from the JSON file."""
+    current_dir = Path(__file__).parent
+    json_path = current_dir / "data" / "legalbench-abercrombie-100samples.json"
+    
+    with open(json_path, "r") as f:
+        data = json.load(f)
+    
+    return [
+        {
+            "prompt": item["prompt"],
+            "answer": item["correct_answer"]
+        }
+        for item in data
+    ]
+
+

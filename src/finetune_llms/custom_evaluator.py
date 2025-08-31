@@ -1,7 +1,7 @@
 import torch
 import wandb
 
-from .evaluation_questions import format_question, get_evaluation_dataset
+from .custom_dataset import load_evaluation_data
 
 
 def evaluate_model(model, tokenizer, log_to_wandb=True):
@@ -17,7 +17,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
         Dict containing evaluation metrics
     """
     model.eval()
-    questions = get_evaluation_dataset()
+    questions = load_evaluation_data()
 
     correct_answers = 0
     total_questions = len(questions)
@@ -27,8 +27,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
 
     with torch.no_grad():
         for i, question_data in enumerate(questions):
-            # Format the prompt
-            prompt = format_question(question_data, include_examples=True)
+            prompt = question_data["prompt"]
 
             # Tokenize input
             inputs = tokenizer(
@@ -73,7 +72,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
 
             # Store result for logging
             result = {
-                "question": question_data["question"],
+                "prompt": question_data["prompt"],
                 "correct_answer": correct_answer,
                 "generated_answer": generated_answer,
                 "is_correct": is_correct,
@@ -115,7 +114,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
         # Create a table for detailed results
         eval_table = wandb.Table(
             columns=[
-                "Question",
+                "Prompt",
                 "Correct Answer",
                 "Generated Answer",
                 "Is Correct",
@@ -123,7 +122,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
             ],
             data=[
                 [
-                    result["question"],
+                    result["prompt"],
                     result["correct_answer"],
                     result["generated_answer"],
                     result["is_correct"],
@@ -138,12 +137,12 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
         wandb.log({"eval/detailed_results": eval_table})
 
         # Log answer distribution
-        answer_counts = {}
-        for result in results:
-            answer = result["generated_answer"]
-            answer_counts[answer] = answer_counts.get(answer, 0) + 1
+        # answer_counts = {}
+        # for result in results:
+        #     answer = result["generated_answer"]
+        #     answer_counts[answer] = answer_counts.get(answer, 0) + 1
 
-        wandb.log({"eval/answer_distribution": answer_counts})
+        # wandb.log({"eval/answer_distribution": answer_counts})
 
     return metrics
 
