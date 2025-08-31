@@ -98,7 +98,7 @@ def main(data_path: str = "data", json_key: str = "content", max_length: int = 2
     # Apply formatting to dataset
     train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
     # Create custom evaluation callback
-    custom_eval_callback = CustomEvalCallback(model, tokenizer, eval_steps=50)
+    custom_eval_callback = CustomEvalCallback(model, tokenizer, eval_steps=100)
 
     print("Starting training...")
     trainer = UnslothTrainer(
