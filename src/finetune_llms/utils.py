@@ -2,7 +2,7 @@ from typing import List
 
 
 def split_text_into_chunks_with_offsets(
-    text: str, max_chunk_size: int = 2000, overlap: int = 100
+    text: str, max_chunk_size: int = 4000, overlap: int = 100
 ) -> List[tuple[str, int, int]]:
     """Split text into manageable chunks with character offsets and overlap."""
     if len(text) <= max_chunk_size:
