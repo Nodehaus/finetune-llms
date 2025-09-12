@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from tqdm import tqdm
+
 from .ollama_client import OllamaClient
 from .utils import split_text_into_chunks_with_offsets
 
@@ -63,15 +65,7 @@ class BaseAnnotationGenerator(ABC):
 
         all_annotations = []
 
-        for i, (chunk, start_offset, end_offset) in enumerate(chunks_with_offsets):
-            if use_chunking:
-                logger.info(
-                    f"Processing chunk {i + 1}/{len(chunks_with_offsets)} for "
-                    f"document {document_id}"
-                )
-            else:
-                logger.info(f"Processing full text for document {document_id}")
-
+        for chunk, start_offset, end_offset in tqdm(chunks_with_offsets):
             prompt = cls._create_prompt(chunk)
             response = ollama_client.generate(prompt, stream=False)
             response_text = response.get("response")
