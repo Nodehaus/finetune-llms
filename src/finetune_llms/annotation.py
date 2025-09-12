@@ -74,7 +74,10 @@ class BaseAnnotationGenerator(ABC):
 
             prompt = cls._create_prompt(chunk)
             response = ollama_client.generate(prompt, stream=False)
-            annotations = cls._parse_response(response.get("response", ""))
+            response_text = response.get("response")
+            if not response_text:
+                raise ValueError("Did not receive valid response from Ollama.")
+            annotations = cls._parse_response(response_text)
 
             for annotation in annotations:
                 annotation["document_id"] = document_id
@@ -222,7 +225,8 @@ TEXT:
 
 JSON:"""
 
-    def _parse_response(self, response: str) -> List[Dict[str, Any]]:
+    @staticmethod
+    def _parse_response(response: str) -> List[Dict[str, Any]]:
         """Parse the model response and extract question/answer pairs."""
         json_start = response.find("{")
         json_end = response.rfind("}") + 1

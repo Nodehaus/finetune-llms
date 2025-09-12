@@ -21,7 +21,7 @@ annotations_to_create = {
 
 for annotations_name, annotations_class in annotations_to_create.items():
     for file_path in input_files:
-        print(f"Generating annotations for {file_path}")
+        print(f"Generating {annotations_name} for {file_path}")
 
         with open(file_path, "r", encoding="utf-8") as f:
             doc_data = json.load(f)
