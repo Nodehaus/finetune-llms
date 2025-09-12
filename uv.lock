@@ -447,6 +447,7 @@ source = { editable = "." }
 dependencies = [
     { name = "datasets" },
     { name = "jupyter" },
+    { name = "torch" },
     { name = "tqdm" },
     { name = "trl" },
     { name = "wandb" },
@@ -461,6 +462,7 @@ dev = [
 requires-dist = [
     { name = "datasets", specifier = ">=4.0.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "torch", specifier = ">=2.8.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "trl", specifier = "==0.19.1" },
     { name = "wandb", specifier = ">=0.21.2" },

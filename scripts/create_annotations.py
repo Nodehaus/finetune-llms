@@ -6,12 +6,12 @@ from finetune_llms.annotation import (
     ObligationAnnotationGenerator,
     QuestionAnswerGenerator,
 )
-from finetune_llms.model_utils import get_gpu_info
 from finetune_llms.ollama_client import OllamaClient
+from finetune_llms.utils import get_gpu_info
 
 MODEL = "gemma3:12b"
 
-target_folder = Path("../data/eng/subset")
+target_folder = Path("data/eng/subset")
 ollama_client = OllamaClient(base_url="http://localhost:11434", model=MODEL)
 
 annotations_folder = target_folder / "annotations"
