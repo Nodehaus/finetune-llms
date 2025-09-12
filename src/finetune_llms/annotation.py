@@ -13,6 +13,12 @@ from .utils import split_text_into_chunks_with_offsets
 logger = logging.getLogger(__name__)
 
 
+class JsonNotFoundError(Exception):
+    """Raised when JSON response cannot be found or parsed from LLM output."""
+
+    pass
+
+
 @dataclass
 class Obligation:
     """Represents a legal obligation."""
@@ -75,7 +81,14 @@ class BaseAnnotationGenerator(ABC):
             response_text = response.get("response")
             if not response_text:
                 raise ValueError("Did not receive valid response from Ollama.")
-            annotations = cls._parse_response(response_text)
+
+            annotations = []
+            try:
+                annotations = cls._parse_response(response_text)
+            except JsonNotFoundError:
+                logger.warning(
+                    f"Could not find curly brackets in response:\n{response_text}"
+                )
 
             for annotation in annotations:
                 annotation["document_id"] = document_id
@@ -170,7 +183,7 @@ JSON:"""
         json_end = response.rfind("}") + 1
 
         if json_start == -1 or json_end == 0:
-            raise ValueError("No JSON found in response")
+            raise JsonNotFoundError("No JSON found in response")
 
         json_str = response[json_start:json_end]
         parsed = json.loads(json_str)
@@ -229,7 +242,7 @@ JSON:"""
         json_end = response.rfind("}") + 1
 
         if json_start == -1 or json_end == 0:
-            raise ValueError("No JSON found in response")
+            raise JsonNotFoundError("No JSON found in response")
 
         json_str = response[json_start:json_end]
         parsed = json.loads(json_str)
