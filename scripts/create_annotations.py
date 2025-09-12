@@ -35,6 +35,7 @@ for annotations_name, annotations_class in annotations_to_create.items():
         annotations_path = annotations_folder / annotations_filename
         if annotations_path.exists():
             print("  Annotation file exists, skipping...")
+            continue
 
         with open(file_path, "r", encoding="utf-8") as f:
             doc_data = json.load(f)
