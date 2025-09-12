@@ -32,7 +32,7 @@ for annotations_name, annotations_class in annotations_to_create.items():
         )
 
         annotations_filename = file_path.name.replace(
-            "_eng.json", f"eng_{annotations_name}.json"
+            "_eng.json", f"_eng_{annotations_name}.json"
         )
         annotations_path = annotations_folder / annotations_filename
 

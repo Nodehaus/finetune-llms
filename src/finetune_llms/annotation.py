@@ -83,8 +83,6 @@ class BaseAnnotationGenerator(ABC):
                 annotation["document_id"] = document_id
                 annotation["within_start"] = start_offset
                 annotation["within_end"] = end_offset
-                if use_chunking:
-                    annotation["chunk_id"] = i
 
             all_annotations.extend(annotations)
 
