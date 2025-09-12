@@ -29,6 +29,13 @@ for annotations_name, annotations_class in annotations_to_create.items():
     for file_path in input_files:
         print(f"Generating {annotations_name} for {file_path}")
 
+        annotations_filename = file_path.name.replace(
+            "_eng.json", f"_eng_{annotations_name}.json"
+        )
+        annotations_path = annotations_folder / annotations_filename
+        if annotations_path.exists():
+            print("  Annotation file exists, skipping...")
+
         with open(file_path, "r", encoding="utf-8") as f:
             doc_data = json.load(f)
 
