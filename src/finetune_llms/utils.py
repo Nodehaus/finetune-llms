@@ -1,122 +1,45 @@
-"""
-Utility functions for loading and working with fine-tuned models.
-"""
-
-from typing import Optional, Tuple
-
-import torch
-from transformers import PreTrainedModel, PreTrainedTokenizer
-from unsloth import FastLanguageModel
+from typing import List
 
 
-def load_peft_model_from_huggingface(
-    model_name: str,
-    max_seq_length: int = 2048,
-    dtype: Optional[torch.dtype] = None,
-    load_in_4bit: bool = False,
-    token: Optional[str] = None,
-) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
-    """
-    Load a fine-tuned PEFT model from HuggingFace Hub.
+def split_text_into_chunks_with_offsets(
+    text: str, max_chunk_size: int = 2000, overlap: int = 100
+) -> List[tuple[str, int, int]]:
+    """Split text into manageable chunks with character offsets and overlap."""
+    if len(text) <= max_chunk_size:
+        return [(text, 0, len(text))]
 
-    Args:
-        model_name: HuggingFace model name (e.g., "pbouda/finetune-cpt-test")
-        max_seq_length: Maximum sequence length (default: 2048)
-        dtype: Model dtype, None for auto-detection (default: None)
-        load_in_4bit: Whether to load in 4-bit quantization (default: True)
-        token: HuggingFace token for private models (default: None)
+    chunks_with_offsets = []
+    start = 0
 
-    Returns:
-        Tuple of (model, tokenizer) ready for inference
+    while start < len(text):
+        end = min(start + max_chunk_size, len(text))
 
-    Example:
-        >>> from src.utils import load_peft_model_from_huggingface
-        >>> model, tokenizer = load_peft_model_from_huggingface("pbouda/finetune-cpt-test")
-        >>>
-        >>> # Enable fast inference
-        >>> FastLanguageModel.for_inference(model)
-        >>>
-        >>> # Generate text
-        >>> inputs = tokenizer(["Your prompt here"], return_tensors="pt").to("cuda")
-        >>> outputs = model.generate(**inputs, max_new_tokens=100, use_cache=True)
-        >>> generated_text = tokenizer.batch_decode(outputs)[0]
-        >>> print(generated_text)
-    """
-    print(f"Loading fine-tuned model from HuggingFace Hub: {model_name}")
+        # If not at the end, try to find a good break point (sentence boundary)
+        if end < len(text):
+            # Look for sentence boundaries within the last 200 characters
+            search_start = max(start, end - 200)
+            sentence_end = text.rfind(". ", search_start, end)
+            if sentence_end != -1:
+                end = sentence_end + 2  # Include the period and space
 
-    # Load the fine-tuned model and tokenizer
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name,
-        max_seq_length=max_seq_length,
-        dtype=dtype,
-        load_in_4bit=load_in_4bit,
-        token=token,
-        # Important: Set this to False for loading fine-tuned models
-        device_map="auto",
+        chunk = text[start:end]
+        chunks_with_offsets.append((chunk, start, end))
+
+        # If we've reached the end, break
+        if end >= len(text):
+            break
+
+        # Move start forward, accounting for overlap
+        start = max(start + 1, end - overlap)
+
+    return chunks_with_offsets
+
+
+def split_text_into_chunks(
+    text: str, max_chunk_size: int = 4000, overlap: int = 100
+) -> List[str]:
+    """Split text into manageable chunks for processing."""
+    chunks_with_offsets = split_text_into_chunks_with_offsets(
+        text, max_chunk_size, overlap
     )
-
-    print("Model and tokenizer loaded successfully!")
-    print(f"Model device: {model.device}")
-    print(f"Model dtype: {model.dtype}")
-
-    return model, tokenizer
-
-
-def setup_model_for_inference(model: PreTrainedModel) -> PreTrainedModel:
-    """
-    Prepare model for fast inference.
-
-    Args:
-        model: The loaded model
-
-    Returns:
-        Model optimized for inference
-    """
-    FastLanguageModel.for_inference(model)
-    return model
-
-
-def generate_text(
-    model: PreTrainedModel,
-    tokenizer: PreTrainedTokenizer,
-    prompt: str,
-    max_new_tokens: int = 100,
-    temperature: float = 0.7,
-    top_p: float = 0.9,
-    do_sample: bool = True,
-    use_cache: bool = True,
-) -> str:
-    """
-    Generate text using the fine-tuned model.
-
-    Args:
-        model: The loaded model
-        tokenizer: The tokenizer
-        prompt: Input prompt text
-        max_new_tokens: Maximum number of tokens to generate
-        temperature: Sampling temperature
-        top_p: Top-p sampling parameter
-        do_sample: Whether to use sampling
-        use_cache: Whether to use key-value cache
-
-    Returns:
-        Generated text
-    """
-    inputs = tokenizer([prompt], return_tensors="pt")
-
-    # Move to same device as model
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            do_sample=do_sample,
-            use_cache=use_cache,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-
-    generated_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-    return generated_text
+    return [chunk for chunk, _, _ in chunks_with_offsets]
