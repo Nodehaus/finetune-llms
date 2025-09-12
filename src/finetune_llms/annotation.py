@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List
@@ -67,7 +68,10 @@ class BaseAnnotationGenerator(ABC):
 
         for chunk, start_offset, end_offset in tqdm(chunks_with_offsets):
             prompt = cls._create_prompt(chunk)
+            start_time = time.time()
             response = ollama_client.generate(prompt, stream=False)
+            end_time = time.time()
+            inference_time = end_time - start_time
             response_text = response.get("response")
             if not response_text:
                 raise ValueError("Did not receive valid response from Ollama.")
@@ -77,6 +81,7 @@ class BaseAnnotationGenerator(ABC):
                 annotation["document_id"] = document_id
                 annotation["within_start"] = start_offset
                 annotation["within_end"] = end_offset
+                annotation["inference_time_seconds"] = round(inference_time, 3)
 
             all_annotations.extend(annotations)
 

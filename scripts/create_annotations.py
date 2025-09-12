@@ -1,14 +1,18 @@
 import json
+import time
 from pathlib import Path
 
 from finetune_llms.annotation import (
     ObligationAnnotationGenerator,
     QuestionAnswerGenerator,
 )
+from finetune_llms.model_utils import get_gpu_info
 from finetune_llms.ollama_client import OllamaClient
 
+MODEL = "gemma3:12b"
+
 target_folder = Path("../data/eng/subset")
-ollama_client = OllamaClient(base_url="http://localhost:11434", model="gemma3:12b")
+ollama_client = OllamaClient(base_url="http://localhost:11434", model=MODEL)
 
 annotations_folder = target_folder / "annotations"
 annotations_folder.mkdir(exist_ok=True)
@@ -19,6 +23,8 @@ annotations_to_create = {
     "obligation_annotations": ObligationAnnotationGenerator,
 }
 
+gpu_info = get_gpu_info()
+
 for annotations_name, annotations_class in annotations_to_create.items():
     for file_path in input_files:
         print(f"Generating {annotations_name} for {file_path}")
@@ -27,9 +33,26 @@ for annotations_name, annotations_class in annotations_to_create.items():
             doc_data = json.load(f)
 
         content = doc_data.get("content")
+        start_time = time.time()
         annotations = annotations_class.generate_annotations(
             ollama_client, content, doc_data.get("id")
         )
+        end_time = time.time()
+        inference_time = end_time - start_time
+        count_annotations = len(annotations)
+        avg_inference_time_per_annotation = inference_time / count_annotations
+
+        data = {
+            "model_name": MODEL,
+            "model_runner": "ollama",
+            "gpu_info": gpu_info,
+            "count_annotations": len(annotations),
+            "total_generation_time": round(inference_time, 3),
+            "avg_generation_time_per_annotation": round(
+                avg_inference_time_per_annotation, 3
+            ),
+            "annotations": annotations,
+        }
 
         annotations_filename = file_path.name.replace(
             "_eng.json", f"_eng_{annotations_name}.json"
@@ -37,4 +60,4 @@ for annotations_name, annotations_class in annotations_to_create.items():
         annotations_path = annotations_folder / annotations_filename
 
         with open(annotations_path, "w", encoding="utf-8") as f:
-            json.dump(annotations, f, indent=2)
+            json.dump(data, f, indent=2)
