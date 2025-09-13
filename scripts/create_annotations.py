@@ -19,20 +19,19 @@ annotations_folder.mkdir(exist_ok=True)
 input_files = target_folder.glob("*_eng.json")
 
 annotations_to_create = {
-    "qa_annotations": QuestionAnswerGenerator,
-    "obligation_annotations": ObligationAnnotationGenerator,
+    "qa": QuestionAnswerGenerator,
+    "obligations": ObligationAnnotationGenerator,
 }
 
 gpu_info = get_gpu_info()
 
 for file_path in input_files:
-    for annotations_name, annotations_class in annotations_to_create.items():
-        print(f"Generating {annotations_name} for {file_path}")
+    for annotations_id, annotations_class in annotations_to_create.items():
+        print(f"Generating {annotations_id} for {file_path}")
 
-        annotations_filename = file_path.name.replace(
-            "_eng.json", f"_eng_{annotations_name}.json"
-        )
-        annotations_path = annotations_folder / annotations_filename
+        annotations_folder_with_id = annotations_folder / annotations_id
+        annotations_folder_with_id.mkdir(exist_ok=True)
+        annotations_path = annotations_folder_with_id / file_path.name
         if annotations_path.exists():
             print("  Annotation file exists, skipping...")
             continue
@@ -61,11 +60,12 @@ for file_path in input_files:
             "avg_generation_time_per_annotation": round(
                 avg_inference_time_per_annotation, 3
             ),
+            "annotations_id": annotations_id,
             "annotations": annotations,
         }
 
         annotations_filename = file_path.name.replace(
-            "_eng.json", f"_eng_{annotations_name}.json"
+            "_eng.json", f"_eng_{annotations_id}.json"
         )
         annotations_path = annotations_folder / annotations_filename
 

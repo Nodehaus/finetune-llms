@@ -82,8 +82,10 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
 
             # Print progress every 10 questions
             if (i + 1) % 10 == 0:
+                current_acc = correct_answers / (i + 1)
                 print(
-                    f"Processed {i + 1}/{total_questions} questions. Current accuracy: {correct_answers / (i + 1):.3f}"
+                    f"Processed {i + 1}/{total_questions} questions. "
+                    f"Current accuracy: {current_acc:.3f}"
                 )
 
     # Calculate final accuracy
@@ -97,7 +99,7 @@ def evaluate_model(model, tokenizer, log_to_wandb=True):
         "eval_results": results,
     }
 
-    print(f"\nEvaluation completed!")
+    print("\nEvaluation completed!")
     print(f"Accuracy: {accuracy:.3f} ({correct_answers}/{total_questions})")
 
     # Log to wandb if requested
