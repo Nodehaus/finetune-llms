@@ -25,8 +25,8 @@ annotations_to_create = {
 
 gpu_info = get_gpu_info()
 
-for annotations_name, annotations_class in annotations_to_create.items():
-    for file_path in input_files:
+for file_path in input_files:
+    for annotations_name, annotations_class in annotations_to_create.items():
         print(f"Generating {annotations_name} for {file_path}")
 
         annotations_filename = file_path.name.replace(

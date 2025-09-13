@@ -86,9 +86,7 @@ class BaseAnnotationGenerator(ABC):
             try:
                 annotations = cls._parse_response(response_text)
             except JsonNotFoundError:
-                logger.warning(
-                    f"Could not find curly brackets in response:\n{response_text}"
-                )
+                logger.warning(f"No JSON in response: {response_text}")
 
             for annotation in annotations:
                 annotation["document_id"] = document_id
@@ -135,10 +133,22 @@ class BaseAnnotationGenerator(ABC):
         pass
 
     @staticmethod
-    @abstractmethod
     def _parse_response(response: str) -> List[Dict[str, Any]]:
-        """Parse the model response for the specific annotation type."""
-        pass
+        """Parse the model response and extract items."""
+        json_start = response.find("{")
+        json_end = response.rfind("}") + 1
+
+        if json_start == -1 or json_end == 0:
+            raise JsonNotFoundError("No JSON found in response")
+
+        json_str = response[json_start:json_end]
+        parsed = json.loads(json_str)
+        items = parsed.get("items")
+        if items is None:
+            logger.warning("Field `items` not found in response: {response}")
+            return []
+
+        return items
 
 
 class ObligationAnnotationGenerator(BaseAnnotationGenerator):
@@ -155,7 +165,7 @@ Focus on requirements (what must be done) and prohibitions (what must not be don
 Return your response as valid JSON with the following structure for each \
 obligation found:
 {{
-  "obligations": [
+  "items": [
     {{
       "type": "requirement|prohibition",
       "description": "Clear summary of what must/must not be done",
@@ -168,27 +178,13 @@ obligation impacts them, even if they're not directly obligated",
 }}
 
 Only return valid JSON. If no clear obligations are found, return \
-{{"obligations": []}}.
+{{"items": []}}.
 
 TEXT:
 
 {text}
 
 JSON:"""
-
-    @staticmethod
-    def _parse_response(response: str) -> List[Dict[str, Any]]:
-        """Parse the model response and extract obligations."""
-        json_start = response.find("{")
-        json_end = response.rfind("}") + 1
-
-        if json_start == -1 or json_end == 0:
-            raise JsonNotFoundError("No JSON found in response")
-
-        json_str = response[json_start:json_end]
-        parsed = json.loads(json_str)
-
-        return parsed.get("obligations", [])
 
 
 class QuestionAnswerGenerator(BaseAnnotationGenerator):
@@ -217,7 +213,7 @@ Ensure variety in question types and complexity levels.
 
 Return your response as valid JSON with the following structure:
 {{
-  "questions": [
+  "items": [
     {{
       "question": "Clear, specific question about the text",
       "answer": "Complete, accurate answer based on the text",
@@ -227,24 +223,10 @@ Return your response as valid JSON with the following structure:
 }}
 
 Only return valid JSON. If the text doesn't contain enough information for \
-meaningful questions, return {{"questions": []}}.
+meaningful questions, return {{"items": []}}.
 
 TEXT:
 
 {text}
 
 JSON:"""
-
-    @staticmethod
-    def _parse_response(response: str) -> List[Dict[str, Any]]:
-        """Parse the model response and extract question/answer pairs."""
-        json_start = response.find("{")
-        json_end = response.rfind("}") + 1
-
-        if json_start == -1 or json_end == 0:
-            raise JsonNotFoundError("No JSON found in response")
-
-        json_str = response[json_start:json_end]
-        parsed = json.loads(json_str)
-
-        return parsed.get("questions", [])
