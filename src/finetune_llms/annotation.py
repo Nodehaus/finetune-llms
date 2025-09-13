@@ -43,6 +43,9 @@ class QuestionAnswer:
 class BaseAnnotationGenerator(ABC):
     """Base class for annotation generators with common functionality."""
 
+    input_field: str = "source_text"
+    output_field: str = "annotation"
+
     @classmethod
     def generate_annotations(
         cls,
@@ -154,6 +157,9 @@ class BaseAnnotationGenerator(ABC):
 class ObligationAnnotationGenerator(BaseAnnotationGenerator):
     """Generator for creating obligation annotations from legal text using Ollama."""
 
+    input_field: str = "source_text"
+    output_field: str = "annotation"
+
     @staticmethod
     def _create_prompt(text: str) -> str:
         """Create prompt for obligation extraction."""
@@ -189,6 +195,9 @@ JSON:"""
 
 class QuestionAnswerGenerator(BaseAnnotationGenerator):
     """Generator for creating question/answer pairs from legal text using Ollama."""
+
+    input_field: str = "question"
+    output_field: str = "answer"
 
     @staticmethod
     def _create_prompt(text: str) -> str:

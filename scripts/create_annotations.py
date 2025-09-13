@@ -54,6 +54,8 @@ for file_path in input_files:
             "model_name": MODEL,
             "model_runner": "ollama",
             "gpu_info": gpu_info,
+            "input_field": annotations_class.input_field,
+            "output_field": annotations_class.output_field,
             "count_annotations": len(annotations),
             "total_generation_time": round(inference_time, 3),
             "avg_generation_time_per_annotation": round(
