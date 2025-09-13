@@ -76,20 +76,36 @@ class BaseAnnotationGenerator(ABC):
         all_annotations = []
 
         for chunk, start_offset, end_offset in tqdm(chunks_with_offsets):
-            prompt = cls._create_prompt(chunk)
-            start_time = time.time()
-            response = ollama_client.generate(prompt, stream=False)
-            end_time = time.time()
-            inference_time = end_time - start_time
-            response_text = response.get("response")
-            if not response_text:
-                raise ValueError("Did not receive valid response from Ollama.")
-
+            max_retries = 3
+            retry_count = 0
             annotations = []
-            try:
-                annotations = cls._parse_response(response_text)
-            except JsonNotFoundError:
-                logger.warning(f"No JSON in response: {response_text}")
+
+            while retry_count < max_retries:
+                prompt = cls._create_prompt(chunk)
+                start_time = time.time()
+                response = ollama_client.generate(prompt, stream=False)
+                end_time = time.time()
+                inference_time = end_time - start_time
+                response_text = response.get("response")
+                if not response_text:
+                    raise ValueError("Did not receive valid response from Ollama.")
+
+                try:
+                    annotations = cls._parse_response(response_text)
+                    break  # Success, exit retry loop
+                except (JsonNotFoundError, json.decoder.JSONDecodeError):
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        logger.warning(
+                            f"JSON parsing error, retrying "
+                            f"({retry_count}/{max_retries}), "
+                            f"response was: {response_text}"
+                        )
+                    else:
+                        logger.error(
+                            f"JSON parsing error after {max_retries} retries, "
+                            f"skipping chunk, response was: {response_text}"
+                        )
 
             for annotation in annotations:
                 annotation["document_id"] = document_id
