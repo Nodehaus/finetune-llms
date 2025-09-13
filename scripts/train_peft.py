@@ -1,10 +1,11 @@
 import argparse
 
+from unsloth import FastLanguageModel  # ruff: isort: skip
+from unsloth.chat_templates import get_chat_template, train_on_responses_only  # ruff: isort: skip
+
 import torch
 import wandb
 from trl import SFTConfig, SFTTrainer
-from unsloth import FastLanguageModel
-from unsloth.chat_templates import get_chat_template, train_on_responses_only
 
 from finetune_llms.custom_dataset import load_annotation_dataset
 
@@ -82,7 +83,7 @@ def main(
     eval_dataset = eval_dataset.map(formatting_prompts_func, batched=True)
 
     print("Text of training dataset:")
-    print(train_dataset[100]["text"])
+    print(train_dataset[25]["text"])
     print("====")
 
     print("Starting PEFT training...")
@@ -96,18 +97,22 @@ def main(
             per_device_train_batch_size=2,
             gradient_accumulation_steps=4,  # Use GA to mimic batch size!
             warmup_steps=5,
-            # num_train_epochs = 1, # Set this for 1 full training run.
-            max_steps=30,
-            learning_rate=2e-4,  # Reduce to 2e-5 for long training runs
+            num_train_epochs=1,  # Set this for 1 full training run.
+            # max_steps=30,
+            learning_rate=2e-5,  # Reduce to 2e-5 for long training runs
             logging_steps=10,
-            eval_steps=20,
             optim="adamw_8bit",
             weight_decay=0.01,
             lr_scheduler_type="linear",
             seed=3407,
             report_to="wandb",  # Use this for WandB etc
+            output_dir="outputs",
+            save_strategy="steps",
+            save_steps=500,
         ),
     )
+
+    # TOOD: Make this depend on the model
     trainer = train_on_responses_only(
         trainer,
         instruction_part="<start_of_turn>user\n",
