@@ -81,7 +81,9 @@ def main(
     train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
     eval_dataset = eval_dataset.map(formatting_prompts_func, batched=True)
 
+    print("Text of training dataset:")
     print(train_dataset[100]["text"])
+    print("====")
 
     print("Starting PEFT training...")
     trainer = SFTTrainer(
@@ -148,12 +150,15 @@ def main(
     #     ),
     # )
 
-    print(tokenizer.decode(trainer.train_dataset[100]["input_ids"]))
+    print("Text after tokenizer:")
+    print(tokenizer.decode(trainer.train_dataset[25]["input_ids"]))
+    print("====")
+    print("Text after padding removed")
     print(
         tokenizer.decode(
             [
                 tokenizer.pad_token_id if x == -100 else x
-                for x in trainer.train_dataset[100]["labels"]
+                for x in trainer.train_dataset[25]["labels"]
             ]
         ).replace(tokenizer.pad_token, " ")
     )

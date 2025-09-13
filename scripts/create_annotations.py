@@ -64,10 +64,5 @@ for file_path in input_files:
             "annotations": annotations,
         }
 
-        annotations_filename = file_path.name.replace(
-            "_eng.json", f"_eng_{annotations_id}.json"
-        )
-        annotations_path = annotations_folder / annotations_filename
-
         with open(annotations_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)

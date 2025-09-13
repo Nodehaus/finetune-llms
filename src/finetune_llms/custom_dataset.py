@@ -223,7 +223,7 @@ class AnnotationDataset:
         if not self.annotations_path.is_dir():
             raise ValueError(f"Invalid annotations path: {self.annotations_path}")
 
-        annotation_files = list(self.annotations_path.glob("*_annotations.json"))
+        annotation_files = list(self.annotations_path.glob("*.json"))
         if not annotation_files:
             raise ValueError(f"No annotation files found in {self.annotations_path}")
 
@@ -231,10 +231,7 @@ class AnnotationDataset:
 
     def _get_source_file_path(self, annotation_file: Path) -> Path:
         """Get the corresponding source file path for an annotation file."""
-        # Extract base name:
-        # 02002L0058-20091219_eng_qa_annotations.json -> 02002L0058-20091219_eng
-        base_name = annotation_file.name.split("_annotations")[0]
-        source_file = self.data_path / f"{base_name}.json"
+        source_file = self.data_path / annotation_file.name
 
         if not source_file.exists():
             raise FileNotFoundError(f"Source file not found: {source_file}")
@@ -286,9 +283,9 @@ class AnnotationDataset:
             annotation_data = json.load(f)
 
         # Get field information
-        input_field = annotation_data.get("input_field", "source_text")
-        output_field = annotation_data.get("output_field", "annotation")
-        annotations = annotation_data.get("annotations", [])
+        input_field = annotation_data.get("input_field")
+        output_field = annotation_data.get("output_field")
+        annotations = annotation_data.get("annotations")
 
         # Only load source content if needed
         source_content = None
