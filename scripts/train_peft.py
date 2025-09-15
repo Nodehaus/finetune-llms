@@ -209,7 +209,7 @@ def run_inference_test(model, tokenizer, val_dataset):
         inputs = tokenizer([input_text], return_tensors="pt").to("cuda")
 
         with torch.no_grad():
-            outputs = model.generate(**inputs, max_new_tokens=100, use_cache=True)
+            outputs = model.generate(**inputs, use_cache=True)
             generated_text = tokenizer.batch_decode(outputs)[0]
 
             # Extract only the generated part (after the input)
@@ -227,9 +227,9 @@ def run_inference_test(model, tokenizer, val_dataset):
         # Print only the first example
         if i == 0:
             print("\nFirst example result:")
-            print(f"Prompt: {user_message[:200]}...")
-            print(f"Expected: {expected_response[:200]}...")
-            print(f"Generated: {generated_response[:200]}...")
+            print(f"Prompt: {user_message}...")
+            print(f"Expected: {expected_response}...")
+            print(f"Generated: {generated_response}...")
 
     # Log results to wandb
     if wandb.run is not None:
