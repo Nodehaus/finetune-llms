@@ -90,8 +90,6 @@ def main(
             formatted_text = tokenizer.apply_chat_template(
                 conversations, tokenize=False, add_generation_prompt=False
             ).removeprefix("<bos>")
-            # Add EOS token to prevent infinite generation
-            formatted_text = formatted_text + tokenizer.eos_token
             texts.append(formatted_text)
         return {"text": texts}
 
@@ -135,42 +133,6 @@ def main(
         instruction_part="<start_of_turn>user\n",
         response_part="<start_of_turn>model\n",
     )
-    # trainer = UnslothTrainer(
-    #     model=model,
-    #     tokenizer=tokenizer,
-    #     train_dataset=train_dataset,
-    #     eval_dataset=val_dataset,
-    #     dataset_text_field="text",
-    #     max_seq_length=max_seq_length,
-    #     dataset_num_proc=2,
-    #     args=UnslothTrainingArguments(
-    #         per_device_train_batch_size=4,  # Larger batch size for PEFT
-    #         per_device_eval_batch_size=8,
-    #         gradient_accumulation_steps=4,  # Smaller accumulation
-    #         warmup_ratio=0.1,
-    #         num_train_epochs=3,  # More epochs for instruction tuning
-    #         learning_rate=2e-4,  # Higher learning rate for PEFT
-    #         embedding_learning_rate=1e-5,
-    #         logging_steps=5,
-    #         eval_steps=50,
-    #         evaluation_strategy="steps",
-    #         optim="adamw_8bit",
-    #         weight_decay=0.01,
-    #         lr_scheduler_type="cosine",
-    #         seed=3407,
-    #         output_dir=output_dir,
-    #         report_to="wandb",
-    #         save_strategy="steps",
-    #         save_steps=100,
-    #         save_total_limit=3,
-    #         load_best_model_at_end=True,
-    #         metric_for_best_model="eval_loss",
-    #         greater_is_better=False,
-    #         # PEFT specific settings
-    #         dataloader_pin_memory=False,
-    #         remove_unused_columns=False,
-    #     ),
-    # )
 
     print("Text after tokenizer:")
     print(tokenizer.decode(trainer.train_dataset[25]["input_ids"]))
@@ -197,10 +159,6 @@ def main(
     final_metrics = trainer.evaluate()
     print(f"Final evaluation metrics: {final_metrics}")
 
-    print("\nTesting inference...")
-    FastLanguageModel.for_inference(model)
-    run_inference_test(model, tokenizer, eval_dataset)
-
     print("\nSaving model to disk...")
     model.save_pretrained(f"{output_dir}/final_model")
     tokenizer.save_pretrained(f"{output_dir}/final_model")
@@ -210,6 +168,16 @@ def main(
     model_name_hub = f"pbouda/{output_model_name}"
     model.push_to_hub(model_name_hub, token=True)
     tokenizer.push_to_hub(model_name_hub, token=True)
+
+    gguf_model_name_hub = f"{model_name_hub}-gguf"
+    model.push_to_hub_gguf(
+        gguf_model_name_hub,
+        quantization_type="Q8_0",
+    )
+
+    print("\nTesting inference...")
+    FastLanguageModel.for_inference(model)
+    run_inference_test(model, tokenizer, eval_dataset)
 
     print("PEFT training completed successfully!")
 
