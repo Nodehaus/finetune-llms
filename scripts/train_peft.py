@@ -66,6 +66,23 @@ def main(
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(eval_dataset)}")
 
+    # Calculate save_steps based on training data size
+    # Total steps = (dataset_size * num_epochs) / (batch_size * gradient_accumulation)
+    per_device_train_batch_size = 2
+    gradient_accumulation_steps = 4
+    num_train_epochs = 1
+
+    total_steps = (len(train_dataset) * num_train_epochs) // (
+        per_device_train_batch_size * gradient_accumulation_steps
+    )
+
+    # Calculate save_steps to save at 1/3 and 2/3 of training
+    # We'll use the smaller of the two intervals (1/3) as save_steps
+    save_steps = max(10, min(500, total_steps // 3))
+
+    print(f"Total training steps: {total_steps}")
+    print(f"Calculated save_steps: {save_steps}")
+
     def formatting_prompts_func(examples):
         texts = []
         for conversations in examples["conversations"]:
@@ -94,10 +111,10 @@ def main(
         eval_dataset=eval_dataset,
         args=SFTConfig(
             dataset_text_field="text",
-            per_device_train_batch_size=2,
-            gradient_accumulation_steps=4,  # Use GA to mimic batch size!
+            per_device_train_batch_size=per_device_train_batch_size,
+            gradient_accumulation_steps=gradient_accumulation_steps,  # Use GA
             warmup_steps=5,
-            num_train_epochs=1,  # Set this for 1 full training run.
+            num_train_epochs=num_train_epochs,  # Set this for 1 full training run.
             # max_steps=30,
             learning_rate=2e-5,  # Reduce to 2e-5 for long training runs
             logging_steps=10,
@@ -108,7 +125,7 @@ def main(
             report_to="wandb",  # Use this for WandB etc
             output_dir="outputs",
             save_strategy="steps",
-            save_steps=500,
+            save_steps=save_steps,
         ),
     )
 
