@@ -166,15 +166,10 @@ def main(
     print("\nSaving model to HuggingFace Hub...")
     # Use the output model name for HuggingFace Hub
     model_name_hub = f"pbouda/{output_model_name}"
-    model.push_to_hub(model_name_hub, token=True)
-    tokenizer.push_to_hub(model_name_hub, token=True)
+    model.push_to_hub_merged(model_name_hub, tokenizer)
 
-    gguf_model_name_hub = f"{model_name_hub}-gguf"
-    model.push_to_hub_gguf(
-        f"{output_dir}/final_model",
-        quantization_type="Q8_0",
-        repo_id=gguf_model_name_hub,
-    )
+    # model.push_to_hub(model_name_hub, token=True)
+    # tokenizer.push_to_hub(model_name_hub, token=True)
 
     print("\nTesting inference...")
     FastLanguageModel.for_inference(model)
