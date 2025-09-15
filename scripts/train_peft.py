@@ -171,7 +171,7 @@ def main(
 
     gguf_model_name_hub = f"{model_name_hub}-gguf"
     model.push_to_hub_gguf(
-        output_model_name, quantization_type="Q8_0", repo_id=gguf_model_name_hub
+        output_dir, quantization_type="Q8_0", repo_id=gguf_model_name_hub
     )
 
     print("\nTesting inference...")
