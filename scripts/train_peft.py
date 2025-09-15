@@ -162,20 +162,21 @@ def main(
     print("\nSaving model to disk...")
     model.save_pretrained(f"{output_dir}/final_model")
     tokenizer.save_pretrained(f"{output_dir}/final_model")
-    model.save_pretrained_gguf(
-        f"{output_dir}/final_model-gguf", quantization_type="Q8_0"
-    )
-    tokenizer.save_pretrained(f"{output_dir}/final_model-gguf")
 
     print("\nSaving model to HuggingFace Hub...")
     # Use the output model name for HuggingFace Hub
     model_name_hub = f"pbouda/{output_model_name}"
     model.push_to_hub_merged(model_name_hub, tokenizer)
-    model.push_to_hub_gguf(
-        f"{model_name_hub}-gguf",
-        tokenizer,
-        quantization_type="Q8_0",
-    )
+    # TODO: gguf quantized model saving does not work currently, they say they fixed it
+    # but I get an error: https://github.com/unslothai/unsloth/issues/2581
+    # Maybe better to convert manually with llama.cpp:
+    # https://docs.unsloth.ai/basics/gemma-3-how-to-run-and-fine-tune#fine-tuning-gemma-3-in-unsloth
+    # model.push_to_hub_gguf(
+    #     f"{output_dir}/final_model",
+    #     tokenizer,
+    #     quantization_type="Q8_0",
+    #     repo_id=f"{model_name_hub}-gguf",
+    # )
 
     print("\nTesting inference...")
     FastLanguageModel.for_inference(model)
