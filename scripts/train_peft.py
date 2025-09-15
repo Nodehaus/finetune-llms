@@ -162,14 +162,20 @@ def main(
     print("\nSaving model to disk...")
     model.save_pretrained(f"{output_dir}/final_model")
     tokenizer.save_pretrained(f"{output_dir}/final_model")
+    model.save_pretrained_gguf(
+        f"{output_dir}/final_model-gguf", quantization_type="Q8_0"
+    )
+    tokenizer.save_pretrained(f"{output_dir}/final_model-gguf")
 
     print("\nSaving model to HuggingFace Hub...")
     # Use the output model name for HuggingFace Hub
     model_name_hub = f"pbouda/{output_model_name}"
     model.push_to_hub_merged(model_name_hub, tokenizer)
-
-    # model.push_to_hub(model_name_hub, token=True)
-    # tokenizer.push_to_hub(model_name_hub, token=True)
+    model.push_to_hub_gguf(
+        f"{model_name_hub}-gguf",
+        tokenizer,
+        quantization_type="Q8_0",
+    )
 
     print("\nTesting inference...")
     FastLanguageModel.for_inference(model)
