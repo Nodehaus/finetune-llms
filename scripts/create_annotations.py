@@ -9,13 +9,13 @@ from finetune_llms.annotation import (
     ObligationAnnotationGenerator,
     QuestionAnswerGenerator,
 )
-from finetune_llms.ollama_client import OllamaClient
+from finetune_llms.clients.ollama_client import OllamaClient
 from finetune_llms.utils import get_gpu_info
 
 # Load environment variables from .env file
 load_dotenv()
 
-MODEL = os.getenv("MODEL", "gemma3:12b")
+MODEL = os.getenv("MODEL", "gemma3:1b")  # qwen3:30b-a3b-instruct-2507-q4_K_M
 
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://s3.peterbouda.eu:3900")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "garage")

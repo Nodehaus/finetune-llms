@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 from tqdm import tqdm
 
-from .ollama_client import OllamaClient
+from .clients.base_client import BaseClient
 from .utils import split_text_into_chunks_with_offsets
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class BaseAnnotationGenerator(ABC):
     @classmethod
     def generate_annotations(
         cls,
-        ollama_client: OllamaClient,
+        llm_client: BaseClient,
         text: str,
         document_id: str,
         use_chunking: bool = True,
@@ -83,12 +83,9 @@ class BaseAnnotationGenerator(ABC):
             while retry_count < max_retries:
                 prompt = cls._create_prompt(chunk)
                 start_time = time.time()
-                response = ollama_client.generate(prompt, stream=False)
+                response_text = llm_client.generate(prompt)
                 end_time = time.time()
                 inference_time = end_time - start_time
-                response_text = response.get("response")
-                if not response_text:
-                    raise ValueError("Did not receive valid response from Ollama.")
 
                 try:
                     annotations = cls._parse_response(response_text)
