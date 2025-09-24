@@ -1,6 +1,6 @@
 import logging
+from typing import Optional, Tuple
 
-# from typing import Optional, Tuple
 import torch
 from transformers import (
     AutoModelForCausalLM,
@@ -8,8 +8,7 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
 )
-
-# from unsloth import FastLanguageModel
+from unsloth import FastLanguageModel
 
 logger = logging.getLogger(__name__)
 
@@ -51,73 +50,73 @@ def load_model_and_tokenizer(model_name: str):
     return model, tokenizer
 
 
-# def load_peft_model_from_huggingface(
-#     model_name: str,
-#     max_seq_length: int = 2048,
-#     dtype: Optional[torch.dtype] = None,
-#     load_in_4bit: bool = False,
-#     token: Optional[str] = None,
-# ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
-#     """
-#     Load a fine-tuned PEFT model from HuggingFace Hub.
+def load_peft_model_from_huggingface(
+    model_name: str,
+    max_seq_length: int = 2048,
+    dtype: Optional[torch.dtype] = None,
+    load_in_4bit: bool = False,
+    token: Optional[str] = None,
+) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
+    """
+    Load a fine-tuned PEFT model from HuggingFace Hub.
 
-#     Args:
-#         model_name: HuggingFace model name (e.g., "pbouda/finetune-cpt-test")
-#         max_seq_length: Maximum sequence length (default: 2048)
-#         dtype: Model dtype, None for auto-detection (default: None)
-#         load_in_4bit: Whether to load in 4-bit quantization (default: True)
-#         token: HuggingFace token for private models (default: None)
+    Args:
+        model_name: HuggingFace model name (e.g., "pbouda/finetune-cpt-test")
+        max_seq_length: Maximum sequence length (default: 2048)
+        dtype: Model dtype, None for auto-detection (default: None)
+        load_in_4bit: Whether to load in 4-bit quantization (default: True)
+        token: HuggingFace token for private models (default: None)
 
-#     Returns:
-#         Tuple of (model, tokenizer) ready for inference
+    Returns:
+        Tuple of (model, tokenizer) ready for inference
 
-#     Example:
-#         >>> from src.utils import load_peft_model_from_huggingface
-#         >>> model, tokenizer = load_peft_model_from_huggingface(
-#         ...     "pbouda/finetune-cpt-test"
-#         ... )
-#         >>>
-#         >>> # Enable fast inference
-#         >>> FastLanguageModel.for_inference(model)
-#         >>>
-#         >>> # Generate text
-#         >>> inputs = tokenizer(["Your prompt here"], return_tensors="pt").to("cuda")
-#         >>> outputs = model.generate(**inputs, max_new_tokens=100, use_cache=True)
-#         >>> generated_text = tokenizer.batch_decode(outputs)[0]
-#         >>> print(generated_text)
-#     """
-#     print(f"Loading fine-tuned model from HuggingFace Hub: {model_name}")
+    Example:
+        >>> from src.utils import load_peft_model_from_huggingface
+        >>> model, tokenizer = load_peft_model_from_huggingface(
+        ...     "pbouda/finetune-cpt-test"
+        ... )
+        >>>
+        >>> # Enable fast inference
+        >>> FastLanguageModel.for_inference(model)
+        >>>
+        >>> # Generate text
+        >>> inputs = tokenizer(["Your prompt here"], return_tensors="pt").to("cuda")
+        >>> outputs = model.generate(**inputs, max_new_tokens=100, use_cache=True)
+        >>> generated_text = tokenizer.batch_decode(outputs)[0]
+        >>> print(generated_text)
+    """
+    print(f"Loading fine-tuned model from HuggingFace Hub: {model_name}")
 
-#     # Load the fine-tuned model and tokenizer
-#     model, tokenizer = FastLanguageModel.from_pretrained(
-#         model_name=model_name,
-#         max_seq_length=max_seq_length,
-#         dtype=dtype,
-#         load_in_4bit=load_in_4bit,
-#         token=token,
-#         # Important: Set this to False for loading fine-tuned models
-#         device_map="auto",
-#     )
+    # Load the fine-tuned model and tokenizer
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=model_name,
+        max_seq_length=max_seq_length,
+        dtype=dtype,
+        load_in_4bit=load_in_4bit,
+        token=token,
+        # Important: Set this to False for loading fine-tuned models
+        device_map="auto",
+    )
 
-#     print("Model and tokenizer loaded successfully!")
-#     print(f"Model device: {model.device}")
-#     print(f"Model dtype: {model.dtype}")
+    print("Model and tokenizer loaded successfully!")
+    print(f"Model device: {model.device}")
+    print(f"Model dtype: {model.dtype}")
 
-#     return model, tokenizer
+    return model, tokenizer
 
 
-# def setup_model_for_inference(model: PreTrainedModel) -> PreTrainedModel:
-#     """
-#     Prepare model for fast inference.
+def setup_model_for_inference(model: PreTrainedModel) -> PreTrainedModel:
+    """
+    Prepare model for fast inference.
 
-#     Args:
-#         model: The loaded model
+    Args:
+        model: The loaded model
 
-#     Returns:
-#         Model optimized for inference
-#     """
-#     FastLanguageModel.for_inference(model)
-#     return model
+    Returns:
+        Model optimized for inference
+    """
+    FastLanguageModel.for_inference(model)
+    return model
 
 
 def generate_text(

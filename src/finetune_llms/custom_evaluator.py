@@ -1,7 +1,7 @@
 import torch
 import wandb
 
-from .custom_dataset import load_evaluation_data
+from finetune_llms.custom_dataset import load_evaluation_data
 
 
 def evaluate_model(model, tokenizer, log_to_wandb=True):

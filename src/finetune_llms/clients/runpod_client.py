@@ -5,7 +5,7 @@ from .base_client import BaseClient
 logger = logging.getLogger(__name__)
 
 
-class RunPodClient(BaseClient):
+class RunpodClient(BaseClient):
     """Client for interacting with RunPod IO API."""
 
     def __init__(
@@ -45,7 +45,16 @@ class RunPodClient(BaseClient):
         Raises:
             requests.exceptions.RequestException: If the API request fails
         """
-        payload = {"input": {"prompt": prompt}}
+        payload = {
+            "input": {
+                "openai_route": "/v1/completions",
+                "openai_input": {
+                    "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+                    "prompt": prompt,
+                    "max_tokens": max_tokens,
+                },
+            }
+        }
 
         response = self.make_request(
             f"v2/{self.pod_id}/runsync", payload, api_key=self.api_key
