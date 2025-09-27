@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from unsloth import FastLanguageModel  # ruff: isort: skip
 from unsloth.chat_templates import get_chat_template, train_on_responses_only  # ruff: isort: skip
@@ -9,25 +10,28 @@ from trl import SFTConfig, SFTTrainer
 
 from finetune_llms.custom_dataset import load_annotation_dataset
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def main(
-    annotations_path: str,
-    data_path: str,
-    max_length: int,
+
+def run_training(
+    s3_bucket: str,
+    training_dataset_s3_path: str,
+    documents_s3_path: str,
+    base_model_name: str,
     model_name: str,
-    output_model_name: str,
 ):
     """Main PEFT training function."""
     # Configuration
-    output_dir = f"outputs/{output_model_name}"
-    max_seq_length = max_length
+    output_dir = f"outputs/{model_name}"
+    max_seq_length = 4096  # Context size
     dtype = None  # None for auto detection
     load_in_4bit = False  # Use 4bit for PEFT training
 
-    print(f"Loading {model_name} model...")
+    logger.info(f"Loading {base_model_name} model...")
     # Load pretrained model and tokenizer
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name,
+        model_name=base_model_name,
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
@@ -39,7 +43,7 @@ def main(
         chat_template="gemma-3",
     )
 
-    print("Setting up LoRA adapters...")
+    logger.info("Setting up LoRA adapters...")
     # Add LoRA adapters - smaller rank for PEFT training
     model = FastLanguageModel.get_peft_model(
         model,
@@ -54,10 +58,12 @@ def main(
         random_state=3407,
     )
 
-    print("Loading and preparing annotation dataset...")
+    logger.info("Loading and preparing annotation dataset...")
     # Load annotation dataset
     datasets = load_annotation_dataset(
-        annotations_path=annotations_path, data_path=data_path, max_length=max_length
+        s3_bucket=s3_bucket,
+        training_dataset_s3_path=training_dataset_s3_path,
+        documents_s3_path=documents_s3_path,
     )
 
     train_dataset = datasets["train"]
@@ -97,10 +103,6 @@ def main(
     train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
     eval_dataset = eval_dataset.map(formatting_prompts_func, batched=True)
 
-    print("Text of training dataset:")
-    print(train_dataset[25]["text"])
-    print("====")
-
     print("Starting PEFT training...")
     trainer = SFTTrainer(
         model=model,
@@ -120,7 +122,7 @@ def main(
             weight_decay=0.01,
             lr_scheduler_type="linear",
             seed=3407,
-            report_to="wandb",  # Use this for WandB etc
+            report_to=None,  # "wandb",  # Use this for WandB etc
             output_dir="outputs",
             save_strategy="steps",
             save_steps=save_steps,
@@ -132,19 +134,6 @@ def main(
         trainer,
         instruction_part="<start_of_turn>user\n",
         response_part="<start_of_turn>model\n",
-    )
-
-    print("Text after tokenizer:")
-    print(tokenizer.decode(trainer.train_dataset[25]["input_ids"]))
-    print("====")
-    print("Text after padding removed")
-    print(
-        tokenizer.decode(
-            [
-                tokenizer.pad_token_id if x == -100 else x
-                for x in trainer.train_dataset[25]["labels"]
-            ]
-        ).replace(tokenizer.pad_token, " ")
     )
 
     trainer_stats = trainer.train()
@@ -165,7 +154,7 @@ def main(
 
     print("\nSaving model to HuggingFace Hub...")
     # Use the output model name for HuggingFace Hub
-    model_name_hub = f"pbouda/{output_model_name}"
+    model_name_hub = f"pbouda/{model_name}"
     model.push_to_hub_merged(model_name_hub, tokenizer)
     # TODO: gguf quantized model saving does not work currently, they say they fixed it
     # but I get an error: https://github.com/unslothai/unsloth/issues/2581
@@ -180,7 +169,7 @@ def main(
 
     print("\nTesting inference...")
     FastLanguageModel.for_inference(model)
-    run_inference_test(model, tokenizer, eval_dataset)
+    # run_inference_test(model, tokenizer, eval_dataset)
 
     print("PEFT training completed successfully!")
 
@@ -268,6 +257,12 @@ if __name__ == "__main__":
         description="Fine-tune model with PEFT using annotation dataset"
     )
     parser.add_argument(
+        "--s3_bucket",
+        type=str,
+        default="nodehaus",
+        help="S3 bucket to load the data from",
+    )
+    parser.add_argument(
         "--annotations_path",
         type=str,
         default="data/eng/subset/annotations/qa",
@@ -278,12 +273,6 @@ if __name__ == "__main__":
         type=str,
         default="data/eng/subset",
         help="Path to directory containing source JSON files",
-    )
-    parser.add_argument(
-        "--max_length",
-        type=int,
-        default=4096,
-        help="Maximum length of input/output pairs",
     )
     parser.add_argument(
         "--model_name",
@@ -300,10 +289,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(
-        annotations_path=args.annotations_path,
-        data_path=args.data_path,
-        max_length=args.max_length,
-        model_name=args.model_name,
-        output_model_name=args.output_model_name,
+    run_training(
+        s3_bucket=args.s3_bucket,
+        training_dataset_s3_path=args.annotations_path,
+        documents_s3_path=args.data_path,
+        base_model_name=args.model_name,
+        model_name=args.output_model_name,
     )
