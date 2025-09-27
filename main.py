@@ -1,9 +1,9 @@
-import argparse
 import logging
 
 from unsloth import FastLanguageModel  # ruff: isort: skip
 from unsloth.chat_templates import get_chat_template, train_on_responses_only  # ruff: isort: skip
 
+import runpod
 import torch
 import wandb
 from trl import SFTConfig, SFTTrainer
@@ -252,47 +252,16 @@ def run_inference_test(model, tokenizer, val_dataset):
     return results
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Fine-tune model with PEFT using annotation dataset"
-    )
-    parser.add_argument(
-        "--s3_bucket",
-        type=str,
-        default="nodehaus",
-        help="S3 bucket to load the data from",
-    )
-    parser.add_argument(
-        "--annotations_path",
-        type=str,
-        default="data/eng/subset/annotations/qa",
-        help="Path to directory containing annotation JSON files",
-    )
-    parser.add_argument(
-        "--data_path",
-        type=str,
-        default="data/eng/subset",
-        help="Path to directory containing source JSON files",
-    )
-    parser.add_argument(
-        "--model_name",
-        type=str,
-        default="unsloth/gemma-3-12b-it",
-        help="Base model to use for training",
-    )
-    parser.add_argument(
-        "--output_model_name",
-        type=str,
-        default="peft-unsloth-testing",
-        help="Output model name (outputs/ will be prefixed automatically)",
-    )
-
-    args = parser.parse_args()
-
+def handler(job):
+    job_input = job["input"]
     run_training(
-        s3_bucket=args.s3_bucket,
-        training_dataset_s3_path=args.annotations_path,
-        documents_s3_path=args.data_path,
-        base_model_name=args.model_name,
-        model_name=args.output_model_name,
+        s3_bucket=job_input["s3_bucket"],
+        training_dataset_s3_path=job_input["training_dataset_s3_path"],
+        documents_s3_path=job_input["documents_s3_path"],
+        base_model_name=job_input["base_model_name"],
+        model_name=job_input["model_name"],
     )
+    return "Training done."
+
+
+runpod.serverless.start({"handler": handler})
