@@ -105,18 +105,18 @@ class TrainingDataset:
     def _process_training_dataset(self) -> Iterator[Dict[str, Any]]:
         """Process the training dataset and yield training examples."""
         # Load training dataset from S3
-        annotation_data = self._load_s3_json(self.training_dataset_s3_path)
+        training_dataset = self._load_s3_json(self.training_dataset_s3_path)
 
         # Get field information
-        input_field = annotation_data.get("input_field")
-        output_field = annotation_data.get("output_field")
-        training_data = annotation_data.get("training_dataset")
+        input_field = training_dataset.get("input_field")
+        output_field = training_dataset.get("output_field")
+        training_data = training_dataset.get("training_data")
 
         if not input_field or not output_field:
             raise ValueError("input_field and output_field are required")
 
         if not training_data:
-            raise ValueError("No data found in training dataset")
+            raise ValueError(f"No data found in training dataset: {training_dataset}")
 
         # Get unique source documents and download them if needed
         if input_field == "source_text":

@@ -354,7 +354,7 @@ def handler(job):
         )
         return "Training done."
     except Exception as exception:
-        return {"error": exception}
+        return {"error": str(exception)}
 
 
 runpod.serverless.start({"handler": handler})
