@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from typing import Any, Dict, Iterator, Set
 
-import boto3
 import datasets
 
 
@@ -21,6 +20,7 @@ class TrainingDataset:
         s3_bucket: str,
         training_dataset_s3_path: str,
         documents_s3_path: str,
+        s3_client,
     ):
         """
         Initialize the training dataset.
@@ -33,7 +33,7 @@ class TrainingDataset:
         self.s3_bucket = s3_bucket
         self.training_dataset_s3_path = training_dataset_s3_path
         self.documents_s3_path = documents_s3_path
-        self.s3_client = boto3.client("s3")
+        self.s3_client = s3_client
         self.temp_dir = tempfile.mkdtemp()
         self.source_documents: Dict[str, str] = {}
 
@@ -185,9 +185,7 @@ class TrainingDataset:
 
 
 def load_training_dataset(
-    s3_bucket: str,
-    training_dataset_s3_path: str,
-    documents_s3_path: str,
+    s3_bucket: str, training_dataset_s3_path: str, documents_s3_path: str, s3_client
 ) -> datasets.DatasetDict:
     """
     Load trainng dataset from S3 and convert to HuggingFace Dataset format.
@@ -206,6 +204,7 @@ def load_training_dataset(
             s3_bucket=s3_bucket,
             training_dataset_s3_path=training_dataset_s3_path,
             documents_s3_path=documents_s3_path,
+            s3_client=s3_client,
         )
         for item in training_dataset:
             yield item
