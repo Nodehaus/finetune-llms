@@ -8,8 +8,9 @@ from unsloth.chat_templates import get_chat_template, train_on_responses_only  #
 import boto3
 import requests
 import runpod
-import torch
-import wandb
+
+# import torch
+# import wandb
 from trl import SFTConfig, SFTTrainer
 
 from finetune_llms.custom_dataset import load_training_dataset
@@ -263,82 +264,82 @@ def run_training(
         raise e
 
 
-def run_inference_test(model, tokenizer, val_dataset):
-    """Run inference test using first 20 examples from validation dataset."""
-    print("\nRunning inference test with validation data...")
+# def run_inference_test(model, tokenizer, val_dataset):
+#     """Run inference test using first 20 examples from validation dataset."""
+#     print("\nRunning inference test with validation data...")
 
-    # Use first 20 examples from validation dataset
-    num_examples = min(20, len(val_dataset))
-    eval_examples = [val_dataset[i] for i in range(num_examples)]
-    print(f"Using {num_examples} examples from validation dataset")
+#     # Use first 20 examples from validation dataset
+#     num_examples = min(20, len(val_dataset))
+#     eval_examples = [val_dataset[i] for i in range(num_examples)]
+#     print(f"Using {num_examples} examples from validation dataset")
 
-    results = []
+#     results = []
 
-    for i, example in enumerate(eval_examples):
-        # Extract conversations from the dataset example
-        conversations = example["conversations"]
-        # Get the user prompt from the first conversation
-        user_message = conversations[0]["content"]
-        # Get the expected response from the assistant message
-        expected_response = conversations[1]["content"]
+#     for i, example in enumerate(eval_examples):
+#         # Extract conversations from the dataset example
+#         conversations = example["conversations"]
+#         # Get the user prompt from the first conversation
+#         user_message = conversations[0]["content"]
+#         # Get the expected response from the assistant message
+#         expected_response = conversations[1]["content"]
 
-        # Format user message as conversation and apply chat template
-        messages = [{"role": "user", "content": user_message}]
-        input_text = tokenizer.apply_chat_template(messages, add_generation_prompt=True)
+#         # Format user message as conversation and apply chat template
+#         messages = [{"role": "user", "content": user_message}]
+#         input_text = tokenizer.apply_chat_template(messages, add_generation_prompt=True)
 
-        # Tokenize and generate
-        inputs = tokenizer([input_text], return_tensors="pt").to("cuda")
+#         # Tokenize and generate
+#         inputs = tokenizer([input_text], return_tensors="pt").to("cuda")
 
-        with torch.no_grad():
-            outputs = model.generate(**inputs, use_cache=True)
-            generated_text = tokenizer.batch_decode(outputs)[0]
+#         with torch.no_grad():
+#             outputs = model.generate(**inputs, use_cache=True)
+#             generated_text = tokenizer.batch_decode(outputs)[0]
 
-            # Extract only the generated part (after the input)
-            generated_response = generated_text[len(input_text) :].strip()
+#             # Extract only the generated part (after the input)
+#             generated_response = generated_text[len(input_text) :].strip()
 
-        result = {
-            "example_id": i,
-            "prompt": user_message,
-            "expected_answer": expected_response,
-            "generated_response": generated_response,
-            "full_output": generated_text,
-        }
-        results.append(result)
+#         result = {
+#             "example_id": i,
+#             "prompt": user_message,
+#             "expected_answer": expected_response,
+#             "generated_response": generated_response,
+#             "full_output": generated_text,
+#         }
+#         results.append(result)
 
-        # Print only the first example
-        if i == 0:
-            print("\nFirst example result:")
-            print(f"Prompt: {user_message}...")
-            print(f"Expected: {expected_response}...")
-            print(f"Generated: {generated_response}...")
+#         # Print only the first example
+#         if i == 0:
+#             print("\nFirst example result:")
+#             print(f"Prompt: {user_message}...")
+#             print(f"Expected: {expected_response}...")
+#             print(f"Generated: {generated_response}...")
 
-    # Log results to wandb
-    if wandb.run is not None:
-        # Log summary metrics
-        wandb.log({"inference_examples_count": len(results)})
+#     # Log results to wandb
+#     if wandb.run is not None:
+#         # Log summary metrics
+#         wandb.log({"inference_examples_count": len(results)})
 
-        # Log detailed results as a table
-        table_data = []
-        for result in results:
-            table_data.append(
-                [
-                    result["example_id"],
-                    result["prompt"][:100],  # Truncate for table display
-                    result["expected_answer"][:100],
-                    result["generated_response"][:100],
-                ]
-            )
+#         # Log detailed results as a table
+#         table_data = []
+#         for result in results:
+#             table_data.append(
+#                 [
+#                     result["example_id"],
+#                     result["prompt"][:100],  # Truncate for table display
+#                     result["expected_answer"][:100],
+#                     result["generated_response"][:100],
+#                 ]
+#             )
 
-        table = wandb.Table(
-            columns=["Example ID", "Prompt", "Expected Answer", "Generated Response"],
-            data=table_data,
-        )
-        wandb.log({"inference_results": table})
-        print(f"\nLogged {len(results)} inference results to wandb")
-    else:
-        print("\nWandb not initialized - skipping logging")
+#         table = wandb.Table(
+#             columns=["Example ID", "Prompt", "Expected Answer", "Generated Response"],
+#             data=table_data,
+#         )
+#         wandb.log({"inference_results": table})
+#         print(f"\nLogged {len(results)} inference results to wandb")
+#     else:
+#         print("\nWandb not initialized - skipping logging")
 
-    return results
+#     return results
 
 
 def handler(job):
