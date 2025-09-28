@@ -240,6 +240,7 @@ def run_training(
 
     except Exception as e:
         logger.error("Job failed!!!!!!!!!!!!!!!!!!!")
+        logger.error(traceback.format_exc())
 
         # Move failed job file to `jobs_failed/`
         job_filename = training_dataset_s3_path.split("/")[-1]
@@ -353,7 +354,6 @@ def handler(job):
         )
         return "Training done."
     except Exception as exception:
-        logger.error(traceback.format_exc())
         return {"error": exception}
 
 
