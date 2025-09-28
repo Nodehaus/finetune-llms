@@ -8,7 +8,7 @@ import torch
 import wandb
 from trl import SFTConfig, SFTTrainer
 
-from finetune_llms.custom_dataset import load_annotation_dataset
+from finetune_llms.custom_dataset import load_training_dataset
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def run_training(
 
     logger.info("Loading and preparing annotation dataset...")
     # Load annotation dataset
-    datasets = load_annotation_dataset(
+    datasets = load_training_dataset(
         s3_bucket=s3_bucket,
         training_dataset_s3_path=training_dataset_s3_path,
         documents_s3_path=documents_s3_path,

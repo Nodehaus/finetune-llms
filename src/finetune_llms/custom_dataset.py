@@ -8,11 +8,11 @@ import boto3
 import datasets
 
 
-class AnnotationDataset:
+class TrainingDataset:
     """
-    Dataset class for loading annotation files and creating input/output pairs.
+    Dataset class for loading a training dataset file and creating input/output pairs.
 
-    Loads annotation files from S3 and finds corresponding source text
+    Loads training dataset files from S3 and finds corresponding source text
     from the original data files.
     """
 
@@ -23,7 +23,7 @@ class AnnotationDataset:
         documents_s3_path: str,
     ):
         """
-        Initialize the annotation dataset.
+        Initialize the training dataset.
 
         Args:
             s3_bucket: S3 bucket name
@@ -110,43 +110,49 @@ class AnnotationDataset:
         # Get field information
         input_field = annotation_data.get("input_field")
         output_field = annotation_data.get("output_field")
-        annotations = annotation_data.get("annotations")
+        training_data = annotation_data.get("training_dataset")
 
         if not input_field or not output_field:
             raise ValueError("input_field and output_field are required")
 
-        if not annotations:
-            raise ValueError("No annotations found in training dataset")
+        if not training_data:
+            raise ValueError("No data found in training dataset")
 
         # Get unique source documents and download them if needed
         if input_field == "source_text":
-            unique_source_docs = self._get_unique_source_documents(annotations)
+            unique_source_docs = self._get_unique_source_documents(training_data)
             if not unique_source_docs:
-                raise ValueError("No source documents found in annotations")
+                raise ValueError("No source documents found in training data items")
             self._download_all_source_documents(unique_source_docs)
 
-        for annotation in annotations:
+        for data_item in training_data:
             # Get input text based on input_field
             if input_field == "source_text":
-                # Get source document for this annotation
-                source_document = annotation.get("source_document")
+                # Get source document for this data item
+                source_document = data_item.get("source_document")
 
                 # Load source content from local file (no caching)
                 source_content = self._load_source_content(source_document)
-                start = annotation.get("within_start", 0)
-                end = annotation.get("within_end", len(source_content))
+                start = data_item.get("source_document_start")
+                end = data_item.get("source_document_end")
                 input_text = source_content[start:end].strip()
             else:
-                # Generic handling: get the field directly from annotation
-                raw_input = annotation.get(input_field)
+                # Generic handling: get the field directly from data item
+                raw_input = data_item.get(input_field)
                 input_text = str(raw_input).strip()
 
             # Get output text based on output_field
-            if output_field == "annotation":
-                output_text = json.dumps(annotation)
+            if output_field == "data_item":
+                if "source_document" in data_item:
+                    del data_item["source_document"]
+                if "source_document_start" in data_item:
+                    del data_item["source_document_start"]
+                if "source_document_end" in data_item:
+                    del data_item["source_document_end"]
+                output_text = json.dumps(data_item)
             else:
                 # Generic handling: get the field directly from annotation
-                raw_output = annotation.get(output_field)
+                raw_output = data_item.get(output_field)
                 output_text = str(raw_output).strip()
 
             # Skip empty pairs
@@ -178,13 +184,13 @@ class AnnotationDataset:
         self.cleanup()
 
 
-def load_annotation_dataset(
+def load_training_dataset(
     s3_bucket: str,
     training_dataset_s3_path: str,
     documents_s3_path: str,
 ) -> datasets.DatasetDict:
     """
-    Load annotation dataset from S3 and convert to HuggingFace Dataset format.
+    Load trainng dataset from S3 and convert to HuggingFace Dataset format.
 
     Args:
         s3_bucket: S3 bucket name
@@ -195,20 +201,20 @@ def load_annotation_dataset(
         datasets.DatasetDict with 'train' and 'validation' splits (95%/5%)
     """
 
-    def annotation_generator():
-        annotation_dataset = AnnotationDataset(
+    def training_dataset_generator():
+        training_dataset = TrainingDataset(
             s3_bucket=s3_bucket,
             training_dataset_s3_path=training_dataset_s3_path,
             documents_s3_path=documents_s3_path,
         )
-        for item in annotation_dataset:
+        for item in training_dataset:
             yield item
 
     # Convert generator to list to ensure we get a regular Dataset, not IterableDataset
-    data_list = list(annotation_generator())
+    data_list = list(training_dataset_generator())
     dataset: datasets.Dataset = datasets.Dataset.from_list(data_list)
 
-    # Create 0.05 validation split (smaller since we have fewer annotation examples)
+    # Create 0.05 validation split (smaller since we have fewer examples)
     dataset_dict = dataset.train_test_split(test_size=0.05, seed=42, shuffle=True)  # type: ignore
 
     return datasets.DatasetDict(
