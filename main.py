@@ -174,7 +174,7 @@ def run_training(
                 weight_decay=0.01,
                 lr_scheduler_type="linear",
                 seed=3407,
-                report_to=None,  # "wandb",  # Use this for WandB etc
+                report_to="none",  # "wandb",  # Use this for WandB etc
                 output_dir="outputs",
                 # save_strategy="steps",
                 # save_steps=save_steps,
