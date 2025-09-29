@@ -14,7 +14,7 @@ RUN git clone https://github.com/ggml-org/llama.cpp && \
     cd .. && \
     rm -rf llama.cpp/
 
-ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # Copy the entire application
 COPY pyproject.toml uv.lock README.md .
