@@ -1,6 +1,6 @@
 FROM python:3.13-slim
 
-RUN apt-get install -y build-essential && \
+RUN apt-get update && apt-get install -y build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
