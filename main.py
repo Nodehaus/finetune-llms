@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import traceback
 
 from unsloth import FastLanguageModel  # ruff: isort: skip
@@ -12,6 +13,7 @@ import runpod
 # import torch
 # import wandb
 from trl import SFTConfig, SFTTrainer
+from unsloth_zoo.llama_cpp import convert_to_gguf, install_llama_cpp
 
 from finetune_llms.custom_dataset import load_training_dataset
 
@@ -23,8 +25,11 @@ AI_PLATFORM_API_KEY = os.getenv("AI_PLATFORM_API_KEY", "")
 JOBS_PATH = "jobs/finetunes/"
 JOBS_DONE_PATH = "jobs_done/fintunes/"
 JOBS_FAILED_PATH = "jobs_failed/finetunes/"
+MODELS_PATH = "finetunes/"
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://s3.peterbouda.eu:3900")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "garage")
+
+install_llama_cpp()
 
 
 def update_finetune_status_api(finetune_id: str, status: str) -> bool:
@@ -66,10 +71,8 @@ def run_training(
 ):
     """Main PEFT training function."""
     # Configuration
-    output_dir = f"outputs/{model_name}"
+    # output_dir = f"outputs/{model_name}"
     max_seq_length = 4096  # Context size
-    dtype = None  # None for auto detection
-    load_in_4bit = False  # Use 4bit for PEFT training
 
     s3_client = boto3.client(
         "s3",
@@ -85,8 +88,9 @@ def run_training(
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name=base_model_name,
             max_seq_length=max_seq_length,
-            dtype=dtype,
-            load_in_4bit=load_in_4bit,
+            dtype=None,
+            load_in_4bit=False,
+            load_in_8bit=False,
             full_finetuning=False,
         )
         # TODO: Make this depend on the model
@@ -200,10 +204,11 @@ def run_training(
         # model.save_pretrained(f"{output_dir}/final_model")
         # tokenizer.save_pretrained(f"{output_dir}/final_model")
 
-        logger.info("Saving model to HuggingFace Hub...")
+        # logger.info("Saving model to HuggingFace Hub...")
         # Use the output model name for HuggingFace Hub
-        model_name_hub = f"pbouda/{model_name}"
-        model.push_to_hub_merged(model_name_hub, tokenizer)
+        # model_name_hub = f"pbouda/{model_name}"
+        # model.push_to_hub_merged(model_name_hub, tokenizer)
+
         # TODO: gguf quantized model saving does not work currently, they say they fixed it
         # but I get an error: https://github.com/unslothai/unsloth/issues/2581
         # Maybe better to convert manually with llama.cpp:
@@ -214,10 +219,36 @@ def run_training(
         #     quantization_type="Q8_0",
         #     repo_id=f"{model_name_hub}-gguf",
         # )
+        gguf_filename = f"{model_name}.gguf"
+        model.save_pretrained(
+            save_directory=f"unsloth/{model_name}",
+            merge_and_unload=True,
+        )
+        convert_to_gguf(
+            input_folder=model_name,
+            output_filename=f"unsloth/{gguf_filename}",
+            quantization_type="q8_0",
+        )
 
-        logger.info("Testing inference...")
-        FastLanguageModel.for_inference(model)
+        # Upload the GGUF file to S3
+        s3_key = f"{MODELS_PATH}{finetune_id}/{gguf_filename}"
+
+        logger.info(f"Uploading GGUF file to S3: {s3_key}")
+        with open(gguf_filename, "rb") as gguf_file:
+            s3_client.upload_fileobj(gguf_file, s3_bucket, s3_key)
+
+        # logger.info("Testing inference...")
+        # FastLanguageModel.for_inference(model)
         # run_inference_test(model, tokenizer, eval_dataset)
+
+        # Clean up temporary directories
+        if os.path.exists("outputs"):
+            logger.info("Removing outputs/ directory")
+            shutil.rmtree("outputs")
+
+        if os.path.exists("unsloth"):
+            logger.info("Removing unsloth/ directory")
+            shutil.rmtree("unsloth")
 
         # Move finished job file to `jobs_done/`
         job_filename = training_dataset_s3_path.split("/")[-1]
