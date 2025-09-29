@@ -13,7 +13,7 @@ import runpod
 # import torch
 # import wandb
 from trl import SFTConfig, SFTTrainer
-from unsloth_zoo.llama_cpp import convert_to_gguf, install_llama_cpp
+from unsloth_zoo.llama_cpp import convert_to_gguf
 
 from finetune_llms.custom_dataset import load_training_dataset
 
@@ -28,8 +28,6 @@ JOBS_FAILED_PATH = "jobs_failed/finetunes/"
 MODELS_PATH = "finetunes/"
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://s3.peterbouda.eu:3900")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "garage")
-
-install_llama_cpp()
 
 
 def update_finetune_status_api(finetune_id: str, status: str) -> bool:
@@ -200,46 +198,29 @@ def run_training(
         final_metrics = trainer.evaluate()
         logger.info(f"Final evaluation metrics: {final_metrics}")
 
-        # logger.info("\nSaving model to disk...")
-        # model.save_pretrained(f"{output_dir}/final_model")
-        # tokenizer.save_pretrained(f"{output_dir}/final_model")
+        # logger.info("Testing inference...")
+        # FastLanguageModel.for_inference(model)
+        # run_inference_test(model, tokenizer, eval_dataset)
 
-        # logger.info("Saving model to HuggingFace Hub...")
-        # Use the output model name for HuggingFace Hub
-        # model_name_hub = f"pbouda/{model_name}"
-        # model.push_to_hub_merged(model_name_hub, tokenizer)
-
-        # TODO: gguf quantized model saving does not work currently, they say they fixed it
-        # but I get an error: https://github.com/unslothai/unsloth/issues/2581
-        # Maybe better to convert manually with llama.cpp:
-        # https://docs.unsloth.ai/basics/gemma-3-how-to-run-and-fine-tune#fine-tuning-gemma-3-in-unsloth
-        # model.push_to_hub_gguf(
-        #     f"{output_dir}/final_model",
-        #     tokenizer,
-        #     quantization_type="Q8_0",
-        #     repo_id=f"{model_name_hub}-gguf",
-        # )
+        logger.info("Creating gguf file")
         gguf_filename = f"{model_name}.gguf"
-        model.save_pretrained(
-            save_directory=f"unsloth/{model_name}",
-            merge_and_unload=True,
-        )
+        merged_model = model.merge_and_unload()
+        merged_model.save_pretrained(f"unsloth/{model_name}")
+        tokenizer.save_pretrained(f"unsloth/{model_name}")
         convert_to_gguf(
-            input_folder=model_name,
+            input_folder=f"unsloth/{model_name}",
             output_filename=f"unsloth/{gguf_filename}",
             quantization_type="q8_0",
         )
 
+        logger.info("Saving model to HuggingFace Hub...")
+        # TODO: Push to gguf to huggingface
+
         # Upload the GGUF file to S3
         s3_key = f"{MODELS_PATH}{finetune_id}/{gguf_filename}"
-
         logger.info(f"Uploading GGUF file to S3: {s3_key}")
-        with open(gguf_filename, "rb") as gguf_file:
+        with open(f"unsloth/{gguf_filename}", "rb") as gguf_file:
             s3_client.upload_fileobj(gguf_file, s3_bucket, s3_key)
-
-        # logger.info("Testing inference...")
-        # FastLanguageModel.for_inference(model)
-        # run_inference_test(model, tokenizer, eval_dataset)
 
         # Clean up temporary directories
         if os.path.exists("outputs"):
