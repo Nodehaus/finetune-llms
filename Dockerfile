@@ -11,8 +11,7 @@ RUN git clone https://github.com/ggml-org/llama.cpp && \
     cd llama.cpp && \
     cmake -B build && \
     cmake --build build --config Release --target install && \
-    cd .. && \
-    rm -rf llama.cpp/
+    cd ..
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
