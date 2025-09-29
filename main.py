@@ -13,7 +13,7 @@ import runpod
 # import torch
 # import wandb
 from trl import SFTConfig, SFTTrainer
-from unsloth_zoo.llama_cpp import convert_to_gguf
+from unsloth_zoo.llama_cpp import convert_to_gguf, install_llama_cpp
 
 from finetune_llms.custom_dataset import load_training_dataset
 
@@ -28,6 +28,8 @@ JOBS_FAILED_PATH = "jobs_failed/finetunes/"
 MODELS_PATH = "finetunes/"
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://s3.peterbouda.eu:3900")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "garage")
+
+install_llama_cpp(just_clone_repo=True)
 
 
 def update_finetune_status_api(finetune_id: str, status: str) -> bool:
