@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 AI_PLATFORM_API_BASE_URL = os.getenv("AI_PLATFORM_API_BASE_URL", "")
 AI_PLATFORM_API_KEY = os.getenv("AI_PLATFORM_API_KEY", "")
-JOBS_PATH = "jobs/finetunes/"
 JOBS_DONE_PATH = "jobs_done/fintunes/"
 JOBS_FAILED_PATH = "jobs_failed/finetunes/"
 MODELS_PATH = "finetunes/"
@@ -77,6 +76,9 @@ def run_training(
         endpoint_url=AWS_ENDPOINT_URL,
         region_name=AWS_DEFAULT_REGION,
     )
+    training_dataset_parts = training_dataset_s3_path.split("/")
+    job_filename = training_dataset_parts[-1]
+    app_env = training_dataset_parts[0]
 
     update_finetune_status_api(finetune_id, "RUNNING")
 
@@ -217,7 +219,7 @@ def run_training(
         # TODO: Push to gguf to huggingface
 
         # Upload the GGUF file to S3
-        s3_key = f"{MODELS_PATH}{finetune_id}/{gguf_filename}"
+        s3_key = f"{app_env}/{MODELS_PATH}{finetune_id}/{gguf_filename}"
         logger.info(f"Uploading GGUF file to S3: {s3_key}")
         with open(f"unsloth/{gguf_filename}", "rb") as gguf_file:
             s3_client.upload_fileobj(gguf_file, s3_bucket, s3_key)
@@ -232,8 +234,7 @@ def run_training(
             shutil.rmtree("unsloth")
 
         # Move finished job file to `jobs_done/`
-        job_filename = training_dataset_s3_path.split("/")[-1]
-        jobs_done_key = f"{JOBS_DONE_PATH}{job_filename}"
+        jobs_done_key = f"{app_env}/{JOBS_DONE_PATH}{job_filename}"
 
         # Copy the job file to jobs_done/
         s3_client.copy_object(
@@ -256,8 +257,7 @@ def run_training(
         logger.error(traceback.format_exc())
 
         # Move failed job file to `jobs_failed/`
-        job_filename = training_dataset_s3_path.split("/")[-1]
-        jobs_failed_key = f"{JOBS_FAILED_PATH}{job_filename}"
+        jobs_failed_key = f"{app_env}/{JOBS_FAILED_PATH}{job_filename}"
 
         # Copy the job file to jobs_failed/
         s3_client.copy_object(
