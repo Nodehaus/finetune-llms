@@ -209,11 +209,23 @@ def run_training(
         merged_model = model.merge_and_unload()
         merged_model.save_pretrained(f"unsloth/{model_name}")
         tokenizer.save_pretrained(f"unsloth/{model_name}")
+
+        # FIXME: This is a workaround for some strange checks in unsloth:
+        # https://github.com/unslothai/unsloth-zoo/blob/main/unsloth_zoo/llama_cpp.py#L893
+        class TrickySet:
+            def __or__(self, other):
+                return None
+
+            def __ror__(self, other):
+                return None
+
         convert_to_gguf(
             model_name=f"unsloth/{gguf_filename}",
             input_folder=f"unsloth/{model_name}",
             quantization_type="q8_0",
             print_output=True,
+            supported_vision_archs=TrickySet(),
+            supported_text_archs=set(),
         )
 
         logger.info("Saving model to HuggingFace Hub...")
