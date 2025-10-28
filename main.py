@@ -18,7 +18,7 @@ from unsloth_zoo.llama_cpp import convert_to_gguf
 from finetune_llms.custom_dataset import load_training_dataset
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("runpod_worker")
 
 AI_PLATFORM_API_BASE_URL = os.getenv("AI_PLATFORM_API_BASE_URL", "")
 AI_PLATFORM_API_KEY = os.getenv("AI_PLATFORM_API_KEY", "")
@@ -228,7 +228,7 @@ def run_training(
             supported_text_archs=set(),
         )
 
-        logger.info("Saving model to HuggingFace Hub...")
+        # logger.info("Saving model to HuggingFace Hub...")
         # TODO: Push gguf to huggingface
 
         # Upload the GGUF file to S3
@@ -369,7 +369,7 @@ def run_training(
 
 def handler(job):
     job_input = job["input"]
-    logger.info(f"Job input:{job_input}")
+    logger.info(f"Job input: {job_input}")
     try:
         run_training(
             s3_bucket=job_input["s3_bucket"],
