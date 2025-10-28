@@ -223,6 +223,7 @@ def run_training(
             model_name=f"unsloth/{gguf_filename}",
             input_folder=f"unsloth/{model_name}",
             quantization_type="q8_0",
+            converter_location="llama.cpp/convert_hf_to_gguf.py",
             print_output=True,
             supported_vision_archs=TrickySet(),
             supported_text_archs=set(),
