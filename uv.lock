@@ -644,8 +644,8 @@ requires-dist = [
     { name = "torch", specifier = ">=2.8.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "trl", specifier = "==0.19.1" },
-    { name = "unsloth", specifier = ">=2025.9.9" },
-    { name = "unsloth-zoo", specifier = ">=2025.9.12" },
+    { name = "unsloth", specifier = ">=2025.10.10" },
+    { name = "unsloth-zoo", specifier = ">=2025.10.12" },
     { name = "wandb", specifier = ">=0.21.2" },
 ]
 
@@ -2284,7 +2284,7 @@ name = "triton"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools", marker = "sys_platform == 'linux'" },
+    { name = "setuptools" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/7b/0a685684ed5322d2af0bddefed7906674f67974aa88b0fae6e82e3b766f6/triton-3.4.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:00be2964616f4c619193cb0d1b29a99bd4b001d7dc333816073f92cf2a8ccdeb", size = 155569223, upload-time = "2025-07-30T19:58:44.017Z" },
@@ -2433,7 +2433,7 @@ wheels = [
 
 [[package]]
 name = "unsloth"
-version = "2025.9.9"
+version = "2025.10.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
@@ -2452,27 +2452,28 @@ dependencies = [
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "transformers" },
-    { name = "triton", marker = "sys_platform == 'linux'" },
-    { name = "triton-windows", marker = "sys_platform == 'win32'" },
+    { name = "triton", marker = "'linux' in sys_platform" },
+    { name = "triton-windows", marker = "(platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32')" },
     { name = "trl" },
     { name = "tyro" },
     { name = "unsloth-zoo" },
     { name = "wheel" },
-    { name = "xformers" },
+    { name = "xformers", marker = "(platform_machine == 'AMD64' and 'linux' in sys_platform) or (platform_machine == 'x86_64' and 'linux' in sys_platform) or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/22/f68af71437b0856c3e854c4a663e7735020237aff1b23aec15ebb7146681/unsloth-2025.9.9.tar.gz", hash = "sha256:f1bc5181ca315808f9de0ff08396121d094df2383b29d294c5555f9e81486ca1", size = 277610, upload-time = "2025-09-26T14:14:25.455Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/e4/bef6eda55e8d87c425f3479cd210ea0a580a60f8e7e6abe9888b3c8fddbc/unsloth-2025.10.10.tar.gz", hash = "sha256:d03d1d87b88c30c062cc78c61bb59b2c7ea9a91d5d06b0d75e055aed7f679d2d", size = 4742928, upload-time = "2025-10-27T06:48:24.893Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/58/0d8b39e8d49912fcc329931403103a963ad4ea92e9332d7b91361f625f0c/unsloth-2025.9.9-py3-none-any.whl", hash = "sha256:01ac19c852ff4684d06c3754c0694a2158e3f0d57b1daa69571e9c9cc4b043f8", size = 317157, upload-time = "2025-09-26T14:14:21.758Z" },
+    { url = "https://files.pythonhosted.org/packages/99/20/b0e263dc9b353b05628e0fc365db1d1cf8dd79347c1284af1fe3c23abf68/unsloth-2025.10.10-py3-none-any.whl", hash = "sha256:c665eb70eaf8be7bb9f02526fbb2228786156adb5d08e108771ee2f3a1d2d7ef", size = 347153, upload-time = "2025-10-27T06:48:16.258Z" },
 ]
 
 [[package]]
 name = "unsloth-zoo"
-version = "2025.9.12"
+version = "2025.10.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
     { name = "cut-cross-entropy" },
     { name = "datasets" },
+    { name = "filelock" },
     { name = "hf-transfer" },
     { name = "huggingface-hub" },
     { name = "msgspec" },
@@ -2488,16 +2489,16 @@ dependencies = [
     { name = "torchao" },
     { name = "tqdm" },
     { name = "transformers" },
-    { name = "triton", marker = "sys_platform == 'linux'" },
-    { name = "triton-windows", marker = "sys_platform == 'win32'" },
+    { name = "triton", marker = "'linux' in sys_platform" },
+    { name = "triton-windows", marker = "(platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32')" },
     { name = "trl" },
     { name = "typing-extensions" },
     { name = "tyro" },
     { name = "wheel" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/a5/3c2f8cd8ade5d6c1ad3c686bf0be109904e45e701e0ab7561c20ac713826/unsloth_zoo-2025.9.12.tar.gz", hash = "sha256:9a9ca709c739d998cb2b79a2dee92b169375ee232ab0cfe5ed47c8d531e04d9a", size = 227231, upload-time = "2025-09-26T15:24:04.67Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/c0/5cfb1fd10160965366ec10536bc0fe7e054dc2cb7c1220f5b758e454e57d/unsloth_zoo-2025.10.12.tar.gz", hash = "sha256:1ae3607582428acbe949ef54e48e5772187cdbe00a2aa4ad2afee9af5b7263b3", size = 253435, upload-time = "2025-10-27T07:30:32.473Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/37/ca3503aa67effb62f4ab85c7b5574f3414a6909d5b8bc1ff31b1d3801f1a/unsloth_zoo-2025.9.12-py3-none-any.whl", hash = "sha256:cc611b20bb29ea81312dd45e07a537fa2099b0b18a20492d9666641d60833fab", size = 247744, upload-time = "2025-09-26T15:24:02.52Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/76/45e0bf8f274e1a25cd389ddf8cc6fe1392398cac3051e19ba52839193870/unsloth_zoo-2025.10.12-py3-none-any.whl", hash = "sha256:2e5cf8074d04fc9e4b2c019fb3dc0e785b82d5664c8afe5eb3f4a9bcfca25529", size = 272238, upload-time = "2025-10-27T07:30:31.023Z" },
 ]
 
 [[package]]

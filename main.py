@@ -357,6 +357,7 @@ def run_training(
 
 def handler(job):
     job_input = job["input"]
+    logger.info(f"Job input:{job_input}")
     try:
         run_training(
             s3_bucket=job_input["s3_bucket"],
