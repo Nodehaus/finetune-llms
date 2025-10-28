@@ -210,8 +210,8 @@ def run_training(
         merged_model.save_pretrained(f"unsloth/{model_name}")
         tokenizer.save_pretrained(f"unsloth/{model_name}")
         convert_to_gguf(
+            model_name=f"unsloth/{gguf_filename}",
             input_folder=f"unsloth/{model_name}",
-            output_filename=f"unsloth/{gguf_filename}",
             quantization_type="q8_0",
             print_output=True,
         )
