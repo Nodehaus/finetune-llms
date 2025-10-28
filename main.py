@@ -213,10 +213,11 @@ def run_training(
             input_folder=f"unsloth/{model_name}",
             output_filename=f"unsloth/{gguf_filename}",
             quantization_type="q8_0",
+            print_output=True,
         )
 
         logger.info("Saving model to HuggingFace Hub...")
-        # TODO: Push to gguf to huggingface
+        # TODO: Push gguf to huggingface
 
         # Upload the GGUF file to S3
         s3_key = f"{app_env}/{MODELS_PATH}{finetune_id}/{gguf_filename}"

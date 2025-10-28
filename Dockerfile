@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y build-essential cmake curl libcurl4-ope
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /
+WORKDIR /app
 
 RUN git clone https://github.com/ggml-org/llama.cpp && \
     cd llama.cpp && \
